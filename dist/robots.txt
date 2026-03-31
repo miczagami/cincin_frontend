@@ -1,0 +1,21 @@
+# CinCin PWA — robots.txt
+# File location: public/robots.txt
+
+User-agent: *
+Allow: /welcome
+Allow: /privacy
+Allow: /terms
+
+# Block authenticated app routes from indexing
+Disallow: /auth/
+Disallow: /scan/
+Disallow: /game/
+Disallow: /clubs/
+Disallow: /buy
+Disallow: /palate/
+Disallow: /profile
+Disallow: /settings
+Disallow: /notifications
+Disallow: /subscription
+
+Sitemap: https://getcincin.com/sitemap.xml

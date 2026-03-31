@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+@layer base {
+  * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body { @apply bg-cin-black text-cin-text font-body m-0 p-0; overscroll-behavior: none; min-height: 100dvh; }
+  ::selection { background: rgba(34,211,238,0.3); color: #fff; }
+}
+
+@layer components {
+  .cin-card { @apply bg-cin-card border border-cin-border rounded-cin p-4; }
+  .cin-card-interactive { @apply cin-card cursor-pointer transition-all duration-200; }
+  .cin-card-interactive:hover { @apply border-cin-cyan/30; }
+  .cin-card-interactive:active { transform: scale(0.985); }
+
+  .cin-btn { @apply inline-flex items-center justify-center gap-2 font-display font-bold rounded-[10px] transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed text-[15px] tracking-[0.02em] select-none; }
+  .cin-btn-primary { @apply cin-btn bg-cin-cyan text-cin-black py-3.5 px-6 w-full; }
+  .cin-btn-primary:hover:not(:disabled) { filter: brightness(1.1); box-shadow: 0 0 24px rgba(34,211,238,0.25); }
+  .cin-btn-primary:active:not(:disabled) { transform: scale(0.98); }
+  .cin-btn-secondary { @apply cin-btn bg-transparent text-cin-cyan border-[1.5px] border-cin-cyan py-3.5 px-6 w-full; }
+  .cin-btn-secondary:hover:not(:disabled) { @apply bg-cin-cyan/10; }
+  .cin-btn-ghost { @apply cin-btn bg-transparent border-none text-cin-muted text-sm py-2 px-0; }
+
+  .cin-input { @apply w-full bg-cin-dark border border-cin-border rounded-lg px-3.5 py-3 text-sm text-cin-white font-body placeholder:text-cin-muted/60 focus:outline-none focus:border-cin-cyan/50 focus:ring-1 focus:ring-cin-cyan/20 transition-all duration-200; }
+  .cin-label { @apply block text-xs text-cin-muted font-body mb-1.5; }
+  .cin-pill { @apply inline-block px-3 py-1 rounded-full text-[11px] font-display font-semibold tracking-[0.05em] uppercase; }
+  .cin-eyebrow { @apply cin-pill bg-cin-cyan-dim text-cin-cyan mb-3; }
+
+  .cin-gradient-hero { background: radial-gradient(ellipse at 50% 30%, rgba(34,211,238,0.12) 0%, #0A0A0A 70%); }
+  .cin-gradient-card { background: linear-gradient(135deg, #1A1A1A 0%, rgba(34,211,238,0.06) 100%); border-color: rgba(34,211,238,0.2); }
+  .cin-gradient-sponsor { background: linear-gradient(135deg, #1A1A1A 0%, rgba(251,146,60,0.06) 100%); border-color: rgba(251,146,60,0.2); }
+
+  .cin-toggle { @apply relative w-11 h-6 rounded-full cursor-pointer transition-colors duration-200 flex-shrink-0; }
+  .cin-toggle-knob { @apply absolute top-[3px] w-[18px] h-[18px] rounded-full bg-white transition-all duration-200 shadow-sm; }
+}
+
+@keyframes skeleton-pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.15; } }
+.cin-skeleton { @apply bg-cin-border rounded; animation: skeleton-pulse 1.5s ease-in-out infinite; }

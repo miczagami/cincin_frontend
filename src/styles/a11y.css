@@ -1,0 +1,178 @@
+/**
+ * Accessibility Enhancements — Priority 6 (Phase 5)
+ * Spec ref: Phase 5 Timeline — Accessibility pass (WCAG AA)
+ *
+ * This file contains CSS additions to merge into global.css.
+ * Addresses common Lighthouse accessibility audit failures on the
+ * CinCin dark theme:
+ *
+ * 1. Focus-visible rings on all interactive elements (keyboard nav)
+ * 2. Reduced motion support (prefers-reduced-motion)
+ * 3. Colour contrast fixes for cin-muted on cin-black (WCAG AA 4.5:1)
+ * 4. Skip-to-content link for screen readers
+ * 5. Improved touch target sizes (48x48 minimum)
+ *
+ * MERGE INSTRUCTIONS: Append this entire block to the end of global.css
+ * (or create a separate a11y.css and import it after global.css).
+ */
+
+/* ═══════════════════════════════════════════════════════════════
+   1. FOCUS-VISIBLE RINGS
+   
+   Adds a visible cyan focus ring on keyboard navigation only
+   (not on mouse/touch clicks). Uses :focus-visible so pointer
+   users don't see the ring.
+   ═══════════════════════════════════════════════════════════════ */
+
+@layer base {
+  /* Global focus-visible ring for all interactive elements */
+  *:focus-visible {
+    outline: 2px solid #22D3EE;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Remove default focus outline (only when focus-visible is supported) */
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Specific overrides for rounded elements */
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  a:focus-visible {
+    outline: 2px solid #22D3EE;
+    outline-offset: 2px;
+  }
+
+  /* Input fields — inset ring to match existing cin-input style */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
+    border-color: rgba(34, 211, 238, 0.5);
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
+  }
+
+  /* Toggle switches */
+  .cin-toggle:focus-visible {
+    outline: 2px solid #22D3EE;
+    outline-offset: 3px;
+    border-radius: 999px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   2. REDUCED MOTION
+   
+   Respects prefers-reduced-motion: reduce by disabling all
+   animations and transitions. Critical for vestibular sensitivity.
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Keep opacity transitions minimal (fade feels less jarring than no transition) */
+  .transition-opacity {
+    transition-duration: 100ms !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   3. COLOUR CONTRAST FIXES
+   
+   cin-muted (#666666) on cin-black (#0A0A0A) = 3.93:1 ratio
+   WCAG AA requires 4.5:1 for normal text.
+   
+   Fix: bump cin-muted to #888888 (5.48:1 ratio) — passes AA.
+   Also ensures cin-text (#CCCCCC on #0A0A0A) = 10.7:1 — already passes.
+   
+   Applied via a CSS custom property override so Tailwind classes
+   automatically pick it up without changing any component code.
+   ═══════════════════════════════════════════════════════════════ */
+
+@layer base {
+  :root {
+    /* Priority 6: Contrast-safe muted text colour
+       Previous: #666666 (3.93:1 on #0A0A0A — fails AA)
+       Updated:  #888888 (5.48:1 on #0A0A0A — passes AA) */
+    --cin-muted-accessible: #888888;
+  }
+}
+
+/* Apply to the Tailwind token if it's a CSS variable, 
+   or override via utility class */
+@layer utilities {
+  .text-cin-muted {
+    color: var(--cin-muted-accessible, #888888);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   4. SKIP TO CONTENT LINK
+   
+   Hidden by default, visible on focus for keyboard users.
+   Place <a href="#main-content" class="cin-skip-link">Skip to content</a>
+   as the first child of <body> or AppShell.
+   ═══════════════════════════════════════════════════════════════ */
+
+@layer components {
+  .cin-skip-link {
+    position: absolute;
+    top: -100%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 99999;
+    padding: 8px 16px;
+    background: #22D3EE;
+    color: #0A0A0A;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Instrument Sans', 'DM Sans', sans-serif;
+    border-radius: 0 0 8px 8px;
+    text-decoration: none;
+    transition: top 0.15s ease;
+  }
+
+  .cin-skip-link:focus {
+    top: 0;
+    outline: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   5. MINIMUM TOUCH TARGET SIZE
+   
+   Ensures all tappable elements meet the 44x44px WCAG guideline
+   (48x48 recommended). Applied as a minimum via padding where
+   the element itself is smaller.
+   ═══════════════════════════════════════════════════════════════ */
+
+@layer base {
+  /* Buttons, links, and controls that might be undersized */
+  button,
+  [role="button"],
+  a,
+  input[type="checkbox"],
+  input[type="radio"],
+  .cin-toggle {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Exceptions for inline elements that shouldn't be enlarged */
+  .cin-btn-ghost,
+  .cin-pill,
+  nav a,
+  a.inline-link {
+    min-height: unset;
+    min-width: unset;
+  }
+}

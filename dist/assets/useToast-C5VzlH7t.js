@@ -1,0 +1,1 @@
+import{A as t}from"./index-BNmDGXJv.js";function a(){const r=t(s=>s.addToast);return{success:(s,o)=>r({type:"success",message:s,duration:o}),error:(s,o)=>r({type:"error",message:s,duration:o}),info:(s,o)=>r({type:"info",message:s,duration:o}),warning:(s,o)=>r({type:"warning",message:s,duration:o})}}export{a as u};

@@ -1,0 +1,286 @@
+{
+  "app": { "name": "CinCin", "tagline": "AI · Tasting · Game" },
+  "nav": { "home": "Home", "scan": "Scan", "clubs": "Clubs", "buy": "Buy", "palate": "Palate" },
+  "auth": {
+    "login": "Log In", "signup": "Sign Up", "logout": "Log Out",
+    "email": "Email", "password": "Password", "forgotPassword": "Forgot password?",
+    "socialGoogle": "Continue with Google", "socialApple": "Continue with Apple",
+    "ageVerify": { "title": "Age Verification", "subtitle": "We need to verify your age before you can play", "verifying": "Verifying…", "passed": "Verified!", "failed": "Verification failed" }
+  },
+  "scan": {
+    "camera": "Camera", "barcode": "Barcode", "search": "Search", "scanning": "Scanning…",
+    "confirm": { "title": "Is this right?", "confidence": "{{percent}}% confidence", "confirmBtn": "Confirm", "searchManual": "Not right? Search manually" }
+  },
+  "game": {
+    "setup": {
+      "title": "Game Setup", "modePassPhone": "Pass the Phone", "modeMultiDevice": "Multi-Device", "modeRemote": "Remote",
+      "parallel": "Parallel", "competitive": "Competitive", "timer": "Round Timer", "maxRounds": "Max Rounds",
+      "optOut": "Opt-Out Timing", "scoreboard": "Scoreboard Visibility", "addPlayer": "Add Player", "createGame": "Create Game",
+      "clubTag": "Tag to Cellar Club", "noClub": "No club (standalone game)", "requiresApproval": "Requires admin approval"
+    },
+    "lobby": {
+      "title": "Game Lobby", "gameCode": "Game Code", "shareCode": "Share this code with other players",
+      "copyCode": "Copy code", "players": "Players", "minPlayers": "Min 2 to start",
+      "expiresIn": "Lobby expires in {{time}}", "startGame": "Start Game", "starting": "Starting…",
+      "waitingHost": "Waiting for host to start…", "connected": "Connected",
+      "reconnecting": "Reconnecting…", "disconnected": "Disconnected"
+    },
+    "play": {
+      "round": "Round {{n}}", "score": "Score", "timer": "{{seconds}}s",
+      "guessPlaceholder": "Enter your guess…", "guess": "Guess",
+      "correct": "Correct! +{{points}}", "wrong": "Wrong! {{points}}",
+      "matched": "Matched: {{note}} ({{type}})", "nextTurn": "Next Turn",
+      "claimedNotes": "Claimed notes", "optOut": "Opt out", "endGame": "End game",
+      "passTo": "Pass the phone to", "imReady": "I'm {{name}} — Start",
+      "waitingOthers": "Waiting for other players…",
+      "othersSubmitted": "{{count}} of {{total}} others have submitted",
+      "gamePaused": "Game Paused",
+      "gamePausedDesc": "The host has disconnected. The game will resume when they reconnect (within 2 minutes).",
+      "roundResults": "Round {{n}} Results"
+    },
+    "optOutModal": { "title": "Opt Out?", "body": "Your score will be locked at {{score}}. You can't rejoin this game.", "cancel": "Cancel", "confirm": "Opt Out" },
+    "endGameModal": { "title": "End Game?", "body": "This will end the game for all players.", "cancel": "Cancel", "confirm": "End Game" },
+    "results": {
+      "title": "Results", "leaderboard": "Leaderboard", "tastingNotes": "Tasting Notes",
+      "breakdown": "Player Breakdown", "playAgain": "Play Again", "share": "Share Results",
+      "clubUpdate": "You moved from {{from}} to {{to}}", "producer": "Producer", "critic": "Critic", "ai": "AI"
+    },
+    "join": {
+      "title": "Join Game", "enterCode": "Enter the 6-character game code to join",
+      "tapToType": "Tap to type code", "joining": "Joining…", "joinBtn": "Join Game",
+      "notFound": "Game not found. Check the code and try again."
+    }
+  },
+  "clubs": {
+    "list": {
+      "title": "Cellar Clubs", "subtitle": "Your leagues & seasons",
+      "createBtn": "Create Club", "joinBtn": "Join Club",
+      "noClubs": "No clubs yet", "noClubsDesc": "Create a Cellar Club and invite your mates, or join one with an invite code.",
+      "enterCode": "Enter invite code", "freeLimitReached": "Free accounts can join 1 club",
+      "upgradePro": "Upgrade to Pro for unlimited →",
+      "daysLeft": "{{days}}d left", "endingToday": "Ending today", "members": "{{count}} members"
+    },
+    "detail": {
+      "leaderboard": "Leaderboard", "activity": "Activity", "pending": "Pending",
+      "noGamesYet": "No games approved yet this season",
+      "playToStart": "Play a game and tag it to this club to get started",
+      "noActivity": "No activity yet", "noPending": "No games pending approval",
+      "approveGames": "Approve Games", "invite": "Invite", "leaveClub": "Leave this club",
+      "leaveConfirm": "Leave {{name}}? Your historical scores will remain on the leaderboard.",
+      "admin": "Admin", "endSeason": "End Season & See Results",
+      "games": "{{count}} games", "you": "(you)"
+    },
+    "create": {
+      "title": "Create Club", "clubName": "Club name", "clubNamePlaceholder": "e.g. Friday Night Vino",
+      "memberCap": "Member cap", "memberCapPlaceholder": "No limit",
+      "seasonType": "Season type", "fixedDate": "Fixed date", "fixedDateDesc": "Ends on a specific date",
+      "fixedLength": "Fixed length", "fixedLengthDesc": "e.g. 1 month, 3 months",
+      "rolling": "Rolling", "rollingDesc": "Ongoing, admin resets manually",
+      "rollingNote": "Rolling seasons continue indefinitely. You can end the season and start a new one at any time.",
+      "endDate": "Season end date", "seasonLength": "Season length",
+      "createBtn": "Create Club", "creating": "Creating…",
+      "freeLimitTitle": "Free accounts are limited to 1 Cellar Club", "upgradePro": "Upgrade to Pro"
+    },
+    "seasonEnd": {
+      "title": "Season Complete", "awards": "Awards", "finalStandings": "Final Standings",
+      "shareResults": "Share Results", "whatsNext": "What's next?",
+      "newSeasonSame": "Start New Season (Same Settings)",
+      "newSeasonModify": "Start New Season (Modify Settings)",
+      "archiveClub": "Archive Club (Read-Only)",
+      "champion": "Champion", "sharpestPalate": "Sharpest Palate",
+      "mostImproved": "Most Improved", "precisionKing": "Precision King", "ironStomach": "Iron Stomach"
+    },
+    "approval": { "approve": "Approve", "reject": "Reject", "playedBy": "Played by {{name}}", "players": "{{count}} players", "score": "Score: {{score}}" }
+  },
+  "notifications": { "title": "Notifications", "empty": "No notifications yet", "markAllRead": "Mark all read" },
+  "offline": { "gamesSynced": "{{count}} game(s) synced", "syncFailed": "Sync failed — will retry", "offlineMode": "You're offline" },
+  "common": { "loading": "Loading…", "error": "Something went wrong", "retry": "Try Again", "cancel": "Cancel", "save": "Save", "back": "Back", "done": "Done", "pro": "PRO", "free": "FREE" }
+}
+  "palate": {
+    "title": "Palate Profile",
+    "subtitle": "Your tasting DNA",
+    "locked": {
+      "title": "Unlock Your Palate Profile",
+      "description": "Play {{remaining}} more game(s) to generate your tasting DNA.",
+      "unlocked_needs_pro": "Your tasting data is ready! Upgrade to Pro to see your analytics.",
+      "progress": "Progress",
+      "requires_pro": "Requires Pro subscription",
+      "upgrade": "Upgrade to Pro"
+    },
+    "profile": {
+      "all_time": "All Time",
+      "recent": "Last 10 Games",
+      "strengths": "Strengths",
+      "weaknesses": "Weaknesses",
+      "accuracy_by_category": "Accuracy by Category",
+      "by_drink_type": "By Drink Type",
+      "accuracy_trend": "Accuracy Trend",
+      "low_data": "Low data",
+      "games": "Games",
+      "accuracy": "Accuracy",
+      "avg_score": "Avg Score",
+      "generate_wrapped": "Generate Palate Wrapped",
+      "share_cta": "Share your tasting DNA with friends"
+    },
+    "wrapped": {
+      "title": "Palate Wrapped",
+      "generating": "Generating your Palate Wrapped...",
+      "your_dna": "Your Palate DNA",
+      "top_strength": "Top strength",
+      "biggest_miss": "Biggest miss",
+      "share_stories": "Share to Stories",
+      "copy_link": "Copy Link",
+      "no_games": "No games played in this period."
+    },
+    "features": {
+      "accuracy": "Accuracy by Category",
+      "accuracy_desc": "See your hit rate for each flavour family",
+      "strengths": "Strengths & Weaknesses",
+      "strengths_desc": "Your top 5 best and worst categories",
+      "trend": "Trend Over Time",
+      "trend_desc": "Track how your palate improves with each game",
+      "drink_type": "By Drink Type",
+      "drink_type_desc": "Compare your wine, beer, and spirits accuracy",
+      "wrapped": "Palate Wrapped",
+      "wrapped_desc": "Shareable card with your tasting DNA stats"
+    }
+  },
+
+  "subscription": {
+    "title": "Go Pro",
+    "subtitle": "Unlock the full CinCin experience",
+    "pro": "Pro",
+    "free": "Free",
+    "monthly": "$12.99/mo",
+    "annual": "$9.99/mo",
+    "annual_label": "Annual Plan",
+    "annual_save": "Save ~20%",
+    "start_trial": "Start 7-Day Free Trial",
+    "trial_note": "Trial starts after your first game. Cancel anytime.",
+    "subscribe": "Subscribe",
+    "manage_billing": "Manage Billing",
+    "cancel": "Cancel Subscription",
+    "cancel_title": "Cancel Pro?",
+    "cancel_description": "Your subscription will remain active until the end of the current billing period.",
+    "cancel_confirm": "Cancel",
+    "keep_pro": "Keep Pro",
+    "reactivate": "Reactivate Subscription",
+    "renews": "Renews {{date}}",
+    "access_until": "Access until {{date}}",
+    "email_required": "Email verification required before subscribing.",
+    "features": {
+      "unlimited_scans": "Unlimited bottle scans",
+      "palate_profile": "Full Palate Profile & analytics",
+      "unlimited_clubs": "Unlimited Cellar Club memberships",
+      "custom_settings": "Custom game settings",
+      "game_history": "Game history & replay",
+      "leaderboards": "Global leaderboards",
+      "ad_free": "Ad-free experience",
+      "priority_ai": "Priority AI scanning"
+    },
+    "lose_access": {
+      "palate": "Palate Profile analytics",
+      "scans": "Unlimited scans (back to 5/month)",
+      "clubs": "Extra Cellar Club memberships",
+      "settings": "Custom game settings"
+    }
+  },
+
+  "buy": {
+    "title": "Buy",
+    "subtitle": "Bottles you've scanned",
+    "empty_title": "No bottles yet",
+    "empty_desc": "Scan a bottle to see purchase links from our partner retailers.",
+    "scan_bottle": "Scan a Bottle",
+    "no_link": "No link",
+    "via": "via {{partner}}"
+  },
+
+  "discovery": {
+    "title": "Discover",
+    "subtitle": "Trending bottles & sponsored tastings",
+    "sponsored": "Sponsored",
+    "points_multiplier": "{{multiplier}}× Points",
+    "play_now": "Play Now",
+    "load_more": "Load More",
+    "empty": "No discoveries yet. Check back soon!"
+  },
+
+  "notifications": {
+    "title": "Notifications",
+    "mark_all_read": "Mark all as read",
+    "empty_title": "No notifications yet",
+    "empty_desc": "Game invites, club updates, and profile insights will appear here.",
+    "types": {
+      "game_invite": "Game invite",
+      "club_game_approved": "Game approved",
+      "club_game_rejected": "Game rejected",
+      "season_ending": "Season ending soon",
+      "season_ended": "Season ended",
+      "palate_updated": "Palate updated",
+      "palate_wrapped": "Palate Wrapped ready",
+      "payment_failed": "Payment failed",
+      "weekly_digest": "Weekly digest"
+    }
+  },
+
+  "profile": {
+    "title": "Profile",
+    "edit": "Edit Profile",
+    "games": "Games",
+    "clubs": "Clubs",
+    "bottles": "Bottles",
+    "menu": {
+      "palate": "Palate Profile",
+      "history": "Game History",
+      "subscription": "Subscription",
+      "settings": "Settings"
+    }
+  },
+
+  "settings": {
+    "title": "Settings",
+    "sections": {
+      "account": "Account",
+      "notifications": "Notifications",
+      "subscription": "Subscription",
+      "data_privacy": "Data & Privacy",
+      "app": "App"
+    },
+    "account": {
+      "edit_profile": "Edit profile",
+      "change_password": "Change password"
+    },
+    "notif": {
+      "game_invites": "Game invites",
+      "club_activity": "Club activity",
+      "season_reminders": "Season reminders",
+      "palate_updates": "Palate updates",
+      "weekly_digests": "Weekly digests",
+      "email": "Email notifications",
+      "push": "Push notifications"
+    },
+    "sub": {
+      "current_plan": "Current plan",
+      "manage": "Manage subscription",
+      "upgrade": "Upgrade to Pro"
+    },
+    "data": {
+      "export_json": "Export my data (JSON)",
+      "export_csv": "Export my data (CSV)",
+      "anonymise": "Anonymise game history",
+      "b2b": "B2B data sharing",
+      "b2b_desc": "Allow anonymised data for industry insights",
+      "delete": "Delete account",
+      "delete_title": "Delete Account?",
+      "delete_desc": "This permanently deletes your account and all associated data. This cannot be undone.",
+      "delete_confirm": "Delete"
+    },
+    "app": {
+      "cached_bottles": "Cached bottles",
+      "clear_cache": "Clear cache",
+      "language": "Language"
+    },
+    "logout": "Log Out"
+  }
+}

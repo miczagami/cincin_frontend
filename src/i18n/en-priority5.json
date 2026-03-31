@@ -1,0 +1,21 @@
+{
+  "settings": {
+    "cachedBottles": "Cached Bottles",
+    "viewCachedBottles": "View cached bottles",
+    "noCachedBottles": "No bottles cached for offline play.",
+    "cachedBottlesHint": "Bottles are cached automatically when you scan them.",
+    "cachedBottleRemoved": "{{name}} removed from cache",
+    "cachedBottleRemoveFailed": "Failed to remove bottle from cache",
+    "offlineDataCleared": "Offline data cache cleared",
+    "offlineDataClearFailed": "Failed to clear offline data"
+  },
+  "offline": {
+    "viewingCachedData": "Viewing offline data",
+    "youreOffline": "You're offline — some features may be limited",
+    "cachedAgo": "Cached {{time}} ago",
+    "refresh": "Refresh",
+    "syncPending": "{{count}} game(s) pending sync",
+    "syncComplete": "{{count}} game(s) synced successfully",
+    "syncError": "Some games failed to sync"
+  }
+}

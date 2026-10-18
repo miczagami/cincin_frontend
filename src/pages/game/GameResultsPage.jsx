@@ -31,7 +31,7 @@ export default function GameResultsPage() {
 
   useEffect(() => {
     (async () => {
-      const res = await loadResults();
+      const res = await loadResults(gameId);
       if (res.success) setResults(res.data);
       setIsLoading(false);
     })();

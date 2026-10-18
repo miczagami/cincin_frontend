@@ -96,11 +96,11 @@ export default function ForgotPasswordPage() {
 
     setIsLoading(true);
     try {
-      await auth.resetPassword(token.trim(), newPassword);
+      await auth.resetPassword({ token: token.trim(), newPassword });
       toast.success('Password reset successfully!');
       setStep(STEPS.SUCCESS);
     } catch (err) {
-      const message = err?.data?.error || 'Invalid or expired reset token.';
+      const message = err?.response?.data?.error || 'Invalid or expired reset token.';
       setErrors({ token: message });
       toast.error(message);
     } finally {

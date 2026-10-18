@@ -117,7 +117,7 @@ export default function GameLobbyPage() {
 
       {/* Note range */}
       {noteRange && (
-        <p className="text-cin-muted text-xs text-center mb-4">{noteRange} tasting notes to find</p>
+        <p className="text-cin-muted text-xs text-center mb-4">{noteRange.low}–{noteRange.high} tasting notes to find</p>
       )}
 
       {/* Player list */}

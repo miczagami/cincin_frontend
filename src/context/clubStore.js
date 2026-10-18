@@ -14,6 +14,48 @@
 import { create } from 'zustand';
 import clubApi from '../services/clubApi';
 
+// ─── Backend → UI normalisers ───
+const AWARD_META = {
+  champion: { emoji: '🏆', label: 'Champion' },
+  sharpestPalate: { emoji: '🎯', label: 'Sharpest Palate' },
+  ironStomach: { emoji: '💪', label: 'Iron Stomach' },
+  mostImproved: { emoji: '📈', label: 'Most Improved' },
+  precisionKing: { emoji: '👑', label: 'Precision King' },
+};
+
+// Backend awards are keyed objects ({ champion: { displayName, value } }); the UI renders a list
+function toAwardList(awards) {
+  if (!awards || Array.isArray(awards)) return awards || [];
+  return Object.entries(awards).map(([key, a]) => ({
+    key,
+    emoji: AWARD_META[key]?.emoji || '🏅',
+    label: AWARD_META[key]?.label || key,
+    winnerName: a.displayName,
+    value: a.value,
+    detail: a.label,
+  }));
+}
+
+function toClub(club) {
+  return {
+    ...club,
+    currentSeason: club.activeSeason ?? club.currentSeason ?? null,
+    memberCount: club.memberCount ?? club.members?.length ?? 0,
+  };
+}
+
+function toPendingGame(g) {
+  return {
+    ...g,
+    playerCount: (g.players?.length || 0) + (g.guestPlayers?.length || 0),
+    submittedBy: g.host?.displayName,
+    submitterScore: g.players?.find((p) => p.userId === g.hostId)?.totalScore,
+    completedAt: g.endedAt,
+  };
+}
+
+const errorMessage = (err, fallback) => err?.response?.data?.error || fallback;
+
 const useClubStore = create((set, get) => ({
   // ═══════════════════════════════════════════
   //  STATE
@@ -59,8 +101,8 @@ const useClubStore = create((set, get) => ({
   fetchMyClubs: async () => {
     set({ isLoading: true, error: null });
     try {
-      const res = await clubApi.listMyClubs();
-      set({ clubs: res.data.clubs || res.data, isLoading: false });
+      const clubs = await clubApi.listMyClubs();
+      set({ clubs: clubs.map(toClub), isLoading: false });
     } catch (err) {
       set({ error: err.response?.data?.error || 'Failed to load clubs', isLoading: false });
     }
@@ -74,11 +116,11 @@ const useClubStore = create((set, get) => ({
   fetchClub: async (clubId) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await clubApi.getClub(clubId);
-      const club = res.data;
+      const club = toClub(await clubApi.getClub(clubId));
       set({
         activeClub: club,
         leaderboard: club.leaderboard || [],
+        members: club.members || [],
         isLoading: false,
       });
       return club;
@@ -87,6 +129,9 @@ const useClubStore = create((set, get) => ({
       return null;
     }
   },
+
+  /** Alias used by club pages */
+  loadClub: (clubId) => get().fetchClub(clubId),
 
   /** Clear active club (when navigating away) */
   clearActiveClub: () => {
@@ -109,8 +154,7 @@ const useClubStore = create((set, get) => ({
   createClub: async (data) => {
     set({ isCreating: true, error: null });
     try {
-      const res = await clubApi.createClub(data);
-      const newClub = res.data;
+      const newClub = toClub(await clubApi.createClub(data));
       set((state) => ({
         clubs: [...state.clubs, newClub],
         activeClub: newClub,
@@ -129,11 +173,9 @@ const useClubStore = create((set, get) => ({
     set({ isJoining: true, error: null });
     try {
       const res = await clubApi.joinClub(inviteCode);
-      const club = res.data;
-      set((state) => ({
-        clubs: [...state.clubs, club],
-        isJoining: false,
-      }));
+      const club = { id: res.clubId, name: res.clubName };
+      set({ isJoining: false });
+      get().fetchMyClubs();
       return { success: true, data: club };
     } catch (err) {
       const msg = err.response?.data?.error || 'Failed to join club';
@@ -174,25 +216,31 @@ const useClubStore = create((set, get) => ({
     }
   },
 
-  /** Fetch club members */
+  /** Fetch club members (part of the club detail response) */
   fetchMembers: async (clubId) => {
-    try {
-      const res = await clubApi.getMembers(clubId);
-      set({ members: res.data.members || res.data });
-    } catch (err) {
-      set({ error: err.response?.data?.error || 'Failed to load members' });
-    }
+    const club = await get().fetchClub(clubId);
+    return club?.members || [];
   },
 
   // ═══════════════════════════════════════════
   //  GAME APPROVAL (Section 5.4)
   // ═══════════════════════════════════════════
 
+  /** Tag a completed game to a club — goes to the admin's approval queue */
+  tagGameToClub: async (clubId, gameId) => {
+    try {
+      const result = await clubApi.tagGame(clubId, gameId);
+      return { success: true, data: result };
+    } catch (err) {
+      return { success: false, error: errorMessage(err, 'Failed to tag game') };
+    }
+  },
+
   /** Fetch pending games for approval (admin only) */
   fetchPendingGames: async (clubId) => {
     try {
-      const res = await clubApi.getPendingGames(clubId);
-      set({ pendingGames: res.data.games || res.data });
+      const games = await clubApi.getPendingGames(clubId);
+      set({ pendingGames: games.map(toPendingGame) });
     } catch (err) {
       set({ error: err.response?.data?.error || 'Failed to load pending games' });
     }
@@ -231,13 +279,10 @@ const useClubStore = create((set, get) => ({
   // ═══════════════════════════════════════════
 
   /** Fetch current season leaderboard */
-  fetchSeasonLeaderboard: async (clubId, seasonId) => {
+  fetchSeasonLeaderboard: async (clubId) => {
     try {
-      const club = get().activeClub;
-      const sid = seasonId || club?.currentSeason?.id;
-      if (!sid) return;
-      const res = await clubApi.getSeasonLeaderboard(clubId, sid);
-      set({ leaderboard: res.data.leaderboard || res.data });
+      const res = await clubApi.getLeaderboard(clubId);
+      set({ leaderboard: res.leaderboard || [] });
     } catch (err) {
       set({ error: err.response?.data?.error || 'Failed to load leaderboard' });
     }
@@ -246,10 +291,10 @@ const useClubStore = create((set, get) => ({
   /** Start a new season (admin only — Section 5.6) */
   startNewSeason: async (clubId, data) => {
     try {
-      const res = await clubApi.startNewSeason(clubId, data);
+      const season = await clubApi.startNewSeason(clubId, data);
       // Refresh club detail to pick up new season
       get().fetchClub(clubId);
-      return { success: true, data: res.data };
+      return { success: true, data: season };
     } catch (err) {
       return { success: false, error: err.response?.data?.error || 'Failed to start season' };
     }
@@ -258,20 +303,26 @@ const useClubStore = create((set, get) => ({
   /** End current season (admin only — rolling seasons) */
   endSeason: async (clubId, seasonId) => {
     try {
-      const res = await clubApi.endSeason(clubId, seasonId);
-      set({ seasonResults: res.data });
-      return { success: true, data: res.data };
+      const sid = seasonId || get().activeClub?.currentSeason?.id;
+      if (!sid) return { success: false, error: 'No active season' };
+      const res = await clubApi.endSeason(clubId, sid);
+      const results = { ...res, awards: toAwardList(res.awards) };
+      set({ seasonResults: results });
+      return { success: true, data: results };
     } catch (err) {
       return { success: false, error: err.response?.data?.error || 'Failed to end season' };
     }
   },
 
-  /** Fetch season end results (awards, final standings) */
+  /** Fetch season end results (awards, final standings) from season history */
   fetchSeasonResults: async (clubId, seasonId) => {
     try {
-      const res = await clubApi.getSeasonResults(clubId, seasonId);
-      set({ seasonResults: res.data });
-      return res.data;
+      const seasons = await clubApi.getSeasonHistory(clubId);
+      const season = seasons.find((s) => s.id === seasonId);
+      if (!season) throw new Error('Season not found');
+      const results = { season, leaderboard: season.finalStandings || [], awards: toAwardList(season.awards) };
+      set({ seasonResults: results });
+      return results;
     } catch (err) {
       set({ error: err.response?.data?.error || 'Failed to load season results' });
       return null;
@@ -281,8 +332,8 @@ const useClubStore = create((set, get) => ({
   /** Fetch season history */
   fetchSeasonHistory: async (clubId) => {
     try {
-      const res = await clubApi.getSeasonHistory(clubId);
-      set({ seasonHistory: res.data.seasons || res.data });
+      const seasons = await clubApi.getSeasonHistory(clubId);
+      set({ seasonHistory: seasons });
     } catch (err) {
       set({ error: err.response?.data?.error || 'Failed to load season history' });
     }
@@ -296,7 +347,7 @@ const useClubStore = create((set, get) => ({
   fetchActivity: async (clubId, opts = {}) => {
     try {
       const res = await clubApi.getActivity(clubId, opts);
-      const items = res.data.activities || res.data;
+      const items = res.activities || [];
       if (opts.offset && opts.offset > 0) {
         // Append for pagination
         set((state) => ({ activityFeed: [...state.activityFeed, ...items] }));
@@ -307,6 +358,9 @@ const useClubStore = create((set, get) => ({
       set({ error: err.response?.data?.error || 'Failed to load activity' });
     }
   },
+
+  /** Alias used by club pages */
+  fetchActivityFeed: (clubId, opts) => get().fetchActivity(clubId, opts),
 
   // ═══════════════════════════════════════════
   //  ARCHIVE (Section 5.6)

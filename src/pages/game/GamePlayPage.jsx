@@ -30,10 +30,10 @@ export default function GamePlayPage() {
   const { gameId } = useParams();
 
   const {
-    status, bottle, currentRound, config, currentPlayer,
+    status, bottle, noteRange, currentRound, config, currentPlayer,
     turnOrder, claimedNotes, scores, lastGuessResult, roundResults,
     isHost, isLoading, error, players,
-    submitGuess, optOut, advanceToNextTurn, endGame, loadResults,
+    submitGuess, optOut, advanceToNextTurn, skipTurn, endGame, refreshState,
     loadTaxonomy, searchTaxonomy, taxonomySuggestions,
     submittedPlayers, waitingForResults, disconnectedPlayers, gamePaused,
   } = useGameStore();
@@ -49,16 +49,31 @@ export default function GamePlayPage() {
 
   useEffect(() => { loadTaxonomy(); }, [loadTaxonomy]);
 
+  // Resync with the server on load (covers page refreshes mid-game)
+  useEffect(() => { if (gameId) refreshState(gameId); }, [gameId, refreshState]);
+
   // Timer
   const timerDuration = config.roundTimer || 60;
   const { timeLeft, isWarning, isExpired, reset: resetCountdown } = useGameTimer(
     timerDuration,
     phase === PHASE.GUESSING,
     async () => {
-      // Auto-skip on timer expiry — server handles multi-device via socket
-      if (!isMultiDevice) await advanceToNextTurn();
+      // Auto-skip on timer expiry — the server runs multi-device round timers itself
+      if (isMultiDevice) return;
+      const result = await skipTurn();
+      if (result.success && !result.data?.gameEnded) {
+        setPhase(PHASE.INTERSTITIAL);
+        resetCountdown();
+      }
     }
   );
+
+  // Multi-device: the server starts each round — go back to guessing when it does
+  useEffect(() => {
+    if (!isMultiDevice) return;
+    setPhase(PHASE.GUESSING);
+    resetCountdown();
+  }, [isMultiDevice, currentRound]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Phase 3: when round results arrive, show feedback
   useEffect(() => {
@@ -83,7 +98,9 @@ export default function GamePlayPage() {
     const result = await submitGuess(guessText.trim());
     if (result.success) {
       setGuessText('');
-      setPhase(isMultiDevice ? PHASE.WAITING : PHASE.FEEDBACK);
+      // The last player to submit can receive the round reveal before their own ack
+      const revealed = isMultiDevice && useGameStore.getState().roundResults;
+      setPhase(isMultiDevice && !revealed ? PHASE.WAITING : PHASE.FEEDBACK);
     }
   };
 
@@ -225,7 +242,11 @@ export default function GamePlayPage() {
             </Card>
           )}
 
-          <Button variant="primary" className="w-full" onClick={handleNextTurn}>Next Round</Button>
+          {isMultiDevice ? (
+            <p className="text-cin-muted text-sm">Next round starting soon…</p>
+          ) : (
+            <Button variant="primary" className="w-full" onClick={handleNextTurn}>Next Turn</Button>
+          )}
         </div>
       </div>
     );
@@ -268,7 +289,7 @@ export default function GamePlayPage() {
       )}
 
       {bottle && (
-        <p className="text-cin-muted text-xs mb-4">{bottle.name} · {bottle.noteRange || 'several'} notes to find</p>
+        <p className="text-cin-muted text-xs mb-4">{bottle.name} · {noteRange ? `${noteRange.low}–${noteRange.high}` : 'several'} notes to find</p>
       )}
 
       {/* Guess input with taxonomy autocomplete */}

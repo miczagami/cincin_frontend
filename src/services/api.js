@@ -82,8 +82,13 @@ export const auth = {
   login: (data) => api.post('/auth/login', data),
   socialLogin: (data) => api.post('/auth/social', data),
   refresh: (data) => api.post('/auth/refresh', data),
-  me: () => api.get('/auth/me'),
-  resetPassword: (data) => api.post('/auth/reset-password', data),
+  logout: () => api.post('/auth/logout'),
+  /** Current user's profile (backend serves this at /users/me) */
+  me: () => api.get('/users/me'),
+  forgotPassword: (email) => api.post('/auth/password-reset/request', { email }),
+  resetPassword: ({ token, newPassword }) => api.post('/auth/password-reset', { token, newPassword }),
+  changePassword: ({ currentPassword, newPassword }) =>
+    api.post('/auth/change-password', { currentPassword, newPassword }),
 };
 
 export const scan = {
@@ -92,19 +97,21 @@ export const scan = {
   search: (params) => api.get('/scan/search', { params }),
   confirm: (scanId) => api.post(`/scan/confirm/${scanId}`),
   sourceNotes: (bottleId) => api.post(`/scan/source-notes/${bottleId}`),
-  taxonomyTree: () => api.get('/scan/taxonomy/tree'),
+  taxonomyTree: (params) => api.get('/scan/taxonomy', { params }),
   taxonomySearch: (params) => api.get('/scan/taxonomy/search', { params }),
 };
 
 export const ageVerify = {
-  initiate: (data) => api.post('/age-verify/initiate', data),
-  status: () => api.get('/age-verify/status'),
+  initiate: (data) => api.post('/auth/age-verify/initiate', data),
+  status: () => api.get('/auth/age-verify/status'),
+  /** Dev-only manual verification (backend rejects this in production) */
+  devVerify: (data) => api.post('/auth/age-verify/manual', data),
 };
 
 export const users = {
-  profile: () => api.get('/users/profile'),
-  updateProfile: (data) => api.patch('/users/profile', data),
-  notificationPrefs: (data) => api.patch('/users/notifications', data),
+  profile: () => api.get('/users/me'),
+  updateProfile: (data) => api.patch('/users/me', data),
+  notificationPrefs: (data) => api.patch('/users/me/notifications', data),
   // Phase 4: Data export + B2B consent
   exportCSV: () => api.get('/users/me/export/csv', { responseType: 'blob' }),
   exportJSON: () => api.get('/users/me/export', { responseType: 'blob' }),
@@ -145,24 +152,7 @@ export const offlineSync = {
 //  PHASE 3 ENDPOINTS
 // ═══════════════════════════════════════════
 
-export const clubs = {
-  create: (data) => api.post('/clubs', data),
-  get: (clubId) => api.get(`/clubs/${clubId}`),
-  listMine: () => api.get('/clubs/mine'),
-  archive: (clubId) => api.post(`/clubs/${clubId}/archive`),
-  join: (data) => api.post('/clubs/join', data),
-  leave: (clubId) => api.post(`/clubs/${clubId}/leave`),
-  removeMember: (clubId, userId) => api.delete(`/clubs/${clubId}/members/${userId}`),
-  getMembers: (clubId) => api.get(`/clubs/${clubId}/members`),
-  tagGame: (clubId, data) => api.post(`/clubs/${clubId}/games`, data),
-  getPendingGames: (clubId) => api.get(`/clubs/${clubId}/games/pending`),
-  approveGame: (clubId, gameId) => api.post(`/clubs/${clubId}/games/${gameId}/approve`),
-  rejectGame: (clubId, gameId) => api.post(`/clubs/${clubId}/games/${gameId}/reject`),
-  getLeaderboard: (clubId, seasonId) => api.get(`/clubs/${clubId}/seasons/${seasonId}/leaderboard`),
-  getActivity: (clubId, params) => api.get(`/clubs/${clubId}/activity`, { params }),
-  endSeason: (clubId, seasonId) => api.post(`/clubs/${clubId}/seasons/${seasonId}/end`),
-  startSeason: (clubId, data) => api.post(`/clubs/${clubId}/seasons`, data),
-};
+// Cellar Club endpoints live in ./clubApi.js
 
 // ═══════════════════════════════════════════
 //  PHASE 4 ENDPOINTS — Palate Profile
@@ -232,11 +222,6 @@ export const notifications = {
   registerPushToken: (data) => api.post('/notifications/push-token', data),
   /** Remove push token */
   removePushToken: (data) => api.delete('/notifications/push-token', { data }),
-};
-
-export const taxonomy = {
-  tree: () => api.get('/taxonomy/tree'),
-  search: (query) => api.get('/taxonomy/search', { params: { q: query } }),
 };
 
 export default api;

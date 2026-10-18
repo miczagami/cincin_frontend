@@ -11,8 +11,72 @@
  */
 
 import { create } from 'zustand';
-import { games as gamesApi } from '../services/api';
+import { games as gamesApi, scan as scanApi } from '../services/api';
 import socketService from '../services/socketService';
+import useAuthStore from './authStore';
+
+// ─── Backend → UI normalisers ───
+// Backend game statuses: LOBBY | IN_PROGRESS | COMPLETED | ABANDONED. The UI uses ENDED for finished games.
+const toStatus = (s) => (s === 'COMPLETED' || s === 'ABANDONED' ? 'ENDED' : s);
+
+function toGuessResult(r) {
+  if (!r) return null;
+  return {
+    ...r,
+    correct: r.isCorrect,
+    points: r.pointsAwarded,
+    roundClaimedNotes: r.matchedNote?.note ? [r.matchedNote.note] : r.matchedNote ? [r.matchedNote] : [],
+  };
+}
+
+// Applies GET /games/:id/state ({ game, bottle, noteRange, currentTurn, claimedNotes, players })
+function fromGameState(state, prevConfig) {
+  const { game, players = [] } = state;
+  const userId = useAuthStore.getState().user?.id;
+  return {
+    gameId: game.id,
+    gameCode: game.gameCode,
+    status: toStatus(game.status),
+    isHost: game.hostId === userId,
+    currentRound: game.currentRound || 1,
+    bottle: state.bottle,
+    noteRange: state.noteRange,
+    claimedNotes: state.claimedNotes || [],
+    players: players.map((p) => ({ ...p, isHost: p.userId === game.hostId, isGuest: p.type === 'guest' })),
+    scores: Object.fromEntries(players.map((p) => [p.displayName, p.totalScore])),
+    currentPlayer: state.currentTurn
+      ? { id: state.currentTurn.playerId, displayName: state.currentTurn.displayName, type: state.currentTurn.type }
+      : null,
+    config: {
+      ...prevConfig,
+      multiplayerType: game.multiplayerType,
+      gameMode: game.mode,
+      roundTimer: game.roundTimerSecs,
+      maxRounds: game.maxRounds,
+      optOutTiming: game.optOutTiming,
+      scoreboardVisible: game.scoreboardVisible,
+    },
+  };
+}
+
+// Maps GET /games/:id/results onto the shape GameResultsPage renders
+function toResults(r) {
+  return {
+    ...r,
+    leaderboard: (r.leaderboard || []).map((p) => ({ ...p, score: p.totalScore })),
+    tastingNotes: (r.noteReveal || []).map((n) => ({ ...n, category: n.genericNote, correct: n.guessed })),
+    playerBreakdowns: (r.leaderboard || []).map((p) => ({
+      userId: p.userId || p.displayName,
+      displayName: p.displayName,
+      correct: p.correctCount,
+      wrong: p.guessCount - p.correctCount,
+      precisionBonus: (p.guesses || []).filter((g) => g.isCorrect && g.isSpecific).length,
+    })),
+    clubId: r.game?.cellarClubId || null,
+  };
+}
+
+const errorMessage = (err, fallback) => err?.response?.data?.error || err?.message || fallback;
 
 const useGameStore = create((set, get) => ({
   // ── Game config ──
@@ -58,30 +122,44 @@ const useGameStore = create((set, get) => ({
   setBottle: (bottle, noteRange) => set({ bottle, noteRange }),
   setCellarClubTag: (clubId) => set((s) => ({ config: { ...s.config, cellarClubId: clubId } })),
 
+  // ── Load / refresh authoritative state from the backend ──
+  refreshState: async (gameId = get().gameId) => {
+    if (!gameId) return { success: false };
+    try {
+      const state = await gamesApi.getState(gameId);
+      set((s) => fromGameState(state, s.config));
+      return { success: true, data: state };
+    } catch (err) {
+      set({ error: errorMessage(err, 'Failed to load game') });
+      return { success: false };
+    }
+  },
+
   // ── Create game ──
-  createGame: async (bottleId) => {
+  createGame: async (bottleId, { clubId } = {}) => {
     set({ isLoading: true, error: null });
     try {
-      const state = get();
+      const { config, guestPlayerNames } = get();
       const payload = {
         bottleId,
-        multiplayerType: state.config.multiplayerType,
-        gameMode: state.config.gameMode,
-        roundTimer: state.config.roundTimer,
-        maxRounds: state.config.maxRounds,
-        optOutTiming: state.config.optOutTiming,
-        scoreboardVisible: state.config.scoreboardVisible,
-        cellarClubId: state.config.cellarClubId,
-        ...(state.config.multiplayerType === 'PASS_THE_PHONE' ? { guestPlayerNames: state.guestPlayerNames } : {}),
+        multiplayerType: config.multiplayerType,
+        mode: config.gameMode,
+        roundTimerSecs: config.roundTimer,
+        maxRounds: config.maxRounds,
+        optOutTiming: config.optOutTiming,
+        scoreboardVisible: config.scoreboardVisible,
+        ...((clubId || config.cellarClubId) ? { cellarClubId: clubId || config.cellarClubId } : {}),
+        ...(config.multiplayerType === 'PASS_THE_PHONE' ? { guestPlayerNames } : {}),
       };
-      const res = await gamesApi.create(payload);
-      const game = res.data;
-      set({ gameId: game.id, gameCode: game.gameCode, status: 'LOBBY', isHost: true, players: game.players || [], isLoading: false });
-      if (state.config.multiplayerType !== 'PASS_THE_PHONE') socketService.joinRoom(game.id);
+      const game = await gamesApi.create(payload);
+      set({ gameId: game.id, gameCode: game.gameCode, status: 'LOBBY', isHost: true, noteRange: game.noteRange });
+      await get().refreshState(game.id);
+      set({ isLoading: false });
       return { success: true, data: game };
     } catch (err) {
-      set({ error: err.response?.data?.error || 'Failed to create game', isLoading: false });
-      return { success: false };
+      const error = errorMessage(err, 'Failed to create game');
+      set({ error, isLoading: false });
+      return { success: false, error };
     }
   },
 
@@ -89,112 +167,178 @@ const useGameStore = create((set, get) => ({
   joinGame: async (gameCode) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await gamesApi.join(gameCode);
-      const game = res.data;
-      set({
-        gameId: game.id, gameCode: game.gameCode, status: 'LOBBY', isHost: false,
-        bottle: game.bottle, noteRange: game.noteRange, players: game.players || [],
-        config: { ...get().config, multiplayerType: game.multiplayerType || 'MULTI_DEVICE', gameMode: game.gameMode, roundTimer: game.roundTimer, maxRounds: game.maxRounds, optOutTiming: game.optOutTiming, scoreboardVisible: game.scoreboardVisible },
-        isLoading: false,
-      });
+      const game = await gamesApi.join({ gameCode });
+      set({ gameId: game.id, gameCode: game.gameCode, status: 'LOBBY', isHost: false });
+      await get().refreshState(game.id);
+      set({ isLoading: false });
       return { success: true, data: game };
     } catch (err) {
-      set({ error: err.response?.data?.error || 'Invalid game code', isLoading: false });
-      return { success: false };
+      const error = errorMessage(err, 'Invalid game code');
+      set({ error, isLoading: false });
+      return { success: false, error };
     }
   },
 
   // ── Start game ──
+  // Multi-device/remote games start over the socket so the server can run the rounds.
   startGame: async () => {
     set({ isLoading: true, error: null });
     try {
       const { gameId, config } = get();
-      const res = await gamesApi.start(gameId);
-      if (config.multiplayerType !== 'PASS_THE_PHONE') socketService.startGame(gameId);
-      set({ status: 'IN_PROGRESS', currentRound: 1, turnOrder: res.data.turnOrder || [], currentPlayer: res.data.currentPlayer || null, isLoading: false });
-      return { success: true, data: res.data };
+      if (config.multiplayerType !== 'PASS_THE_PHONE') {
+        await socketService.startGame(gameId);
+      } else {
+        await gamesApi.start(gameId);
+      }
+      await get().refreshState(gameId);
+      set({ status: 'IN_PROGRESS', isLoading: false });
+      return { success: true };
     } catch (err) {
-      set({ error: err.response?.data?.error || 'Failed to start', isLoading: false });
+      set({ error: errorMessage(err, 'Failed to start'), isLoading: false });
       return { success: false };
     }
+  },
+
+  // Pass-the-phone: the host's device plays every turn, so guests are identified explicitly
+  _turnIdentity: () => {
+    const { currentPlayer } = get();
+    return currentPlayer?.type === 'guest'
+      ? { isGuest: true, guestPlayerId: currentPlayer.id }
+      : { isGuest: false };
   },
 
   // ── Submit guess ──
-  submitGuess: async (guessText, isGuest = false, guestPlayerId = null) => {
+  submitGuess: async (guessText) => {
     set({ isLoading: true, error: null });
     try {
-      const { gameId, config, currentRound } = get();
+      const { gameId, config } = get();
       if (config.multiplayerType !== 'PASS_THE_PHONE') {
-        socketService.submitGuess(gameId, { guessText, round: currentRound });
-        set({ waitingForResults: true, isLoading: false });
-        return { success: true };
+        const result = await socketService.submitGuess(gameId, guessText);
+        // The reveal may already have arrived if this was the last submission of the round
+        set((s) => ({
+          lastGuessResult: toGuessResult(result),
+          waitingForResults: !s.roundResults,
+          roundResults: s.roundResults ? { ...s.roundResults, myResult: s.roundResults.myResult || toGuessResult(result) } : null,
+          isLoading: false,
+        }));
+        return { success: true, data: result };
       }
-      const res = await gamesApi.guess(gameId, { guessText, isGuest, guestPlayerId });
-      set({ lastGuessResult: res.data, claimedNotes: res.data.claimedNotes || get().claimedNotes, scores: res.data.scores || get().scores, isLoading: false });
-      return { success: true, data: res.data };
+      const result = await gamesApi.submitGuess(gameId, { guessText, ...get()._turnIdentity() });
+      set({ lastGuessResult: toGuessResult(result), isLoading: false });
+      await get().refreshState(gameId);
+      return { success: true, data: result };
     } catch (err) {
-      set({ error: err.response?.data?.error || 'Failed to submit', isLoading: false });
+      set({ error: errorMessage(err, 'Failed to submit'), isLoading: false });
       return { success: false };
     }
   },
 
-  optOut: async (isGuest = false, guestPlayerId = null) => {
+  optOut: async () => {
     try {
       const { gameId, config } = get();
-      if (config.multiplayerType !== 'PASS_THE_PHONE') { socketService.submitOptOut(gameId); return { success: true }; }
-      await gamesApi.optOut(gameId, { isGuest, guestPlayerId });
+      if (config.multiplayerType !== 'PASS_THE_PHONE') {
+        await socketService.optOut(gameId);
+        return { success: true };
+      }
+      await gamesApi.optOut(gameId, get()._turnIdentity());
+      await get().refreshState(gameId);
       return { success: true };
-    } catch (err) { return { success: false, error: err.response?.data?.error }; }
+    } catch (err) { return { success: false, error: errorMessage(err) }; }
   },
 
+  // Pass-the-phone: move to the next player's turn (or next round)
   advanceToNextTurn: async () => {
     try {
-      const res = await gamesApi.advance(get().gameId);
-      set({ currentPlayer: res.data.currentPlayer, currentRound: res.data.currentRound, claimedNotes: res.data.claimedNotes || get().claimedNotes, lastGuessResult: null });
-      if (res.data.gameEnded) set({ status: 'ENDED' });
-      return { success: true, data: res.data };
-    } catch (err) { return { success: false }; }
+      const { gameId } = get();
+      const result = await gamesApi.advance(gameId);
+      // advance returns the completed game when an end condition is hit
+      if (result.status === 'COMPLETED') {
+        set({ status: 'ENDED', lastGuessResult: null });
+        return { success: true, data: { gameEnded: true } };
+      }
+      set({ lastGuessResult: null });
+      await get().refreshState(gameId);
+      return { success: true, data: { ...result, gameEnded: false } };
+    } catch (err) { return { success: false, error: errorMessage(err) }; }
+  },
+
+  // Pass-the-phone: turn timer ran out — record a 0-point skip, then advance
+  skipTurn: async () => {
+    const { gameId, currentPlayer } = get();
+    try {
+      await gamesApi.autoSkip(gameId, currentPlayer?.type === 'guest'
+        ? { isGuest: true, guestPlayerId: currentPlayer.id }
+        : { playerId: currentPlayer?.id });
+    } catch { /* still advance — the skip record is non-critical */ }
+    return get().advanceToNextTurn();
   },
 
   endGame: async () => {
     try {
-      const { gameId, config } = get();
-      if (config.multiplayerType !== 'PASS_THE_PHONE') socketService.endGame(gameId);
-      await gamesApi.end(gameId);
+      // REST end also broadcasts game:ended to multi-device players
+      await gamesApi.endGame(get().gameId);
       set({ status: 'ENDED' });
       return { success: true };
-    } catch (err) { return { success: false }; }
+    } catch (err) { return { success: false, error: errorMessage(err) }; }
   },
 
-  loadResults: async () => {
-    try { const res = await gamesApi.results(get().gameId); return { success: true, data: res.data }; }
-    catch (err) { return { success: false }; }
+  loadResults: async (gameId = get().gameId) => {
+    try { return { success: true, data: toResults(await gamesApi.results(gameId)) }; }
+    catch (err) { return { success: false, error: errorMessage(err) }; }
   },
 
   // ── Taxonomy ──
-  loadTaxonomy: async () => { /* STUB: loaded via scan service, same as Phase 2 */ },
+  loadTaxonomy: async () => { /* suggestions are fetched on demand by searchTaxonomy */ },
   searchTaxonomy: async (query) => {
     if (!query || query.length < 2) { set({ taxonomySuggestions: [] }); return; }
-    try { const { scan } = await import('../services/api'); const res = await scan.taxonomySearch(query); set({ taxonomySuggestions: res.data.results || res.data }); }
-    catch { set({ taxonomySuggestions: [] }); }
+    try {
+      const results = await scanApi.taxonomySearch({ q: query });
+      set({ taxonomySuggestions: (results || []).map((n) => ({ ...n, isSpecific: !n.isGeneric })) });
+    } catch { set({ taxonomySuggestions: [] }); }
   },
 
-  // ── Phase 3: WebSocket event handlers (called by useMultiDeviceGame) ──
-  handleLobbyPlayerJoined: (data) => set((s) => ({ players: [...s.players.filter((p) => p.id !== data.player?.id), data.player].filter(Boolean) })),
-  handleLobbyPlayerLeft: (data) => set((s) => ({ players: s.players.filter((p) => p.id !== data.playerId) })),
-  handleGameStarting: (data) => set({ status: 'IN_PROGRESS', currentRound: data.round || 1 }),
-  handleRoundStart: (data) => set({ currentRound: data.round, submittedPlayers: [], waitingForResults: false, roundResults: null, lastGuessResult: null }),
-  handlePlayerSubmitted: (data) => set((s) => ({ submittedPlayers: [...s.submittedPlayers, data.playerId] })),
-  handleRoundResults: (data) => set({ roundResults: data, waitingForResults: false, claimedNotes: data.claimedNotes || [], scores: data.scores || {}, lastGuessResult: data.myResult || null }),
+  // ── Phase 3: WebSocket event handlers (wired up by useMultiDeviceGame) ──
+  // Payloads follow the server events in cincin_backend/src/config/socketServer.js
+  handleGameStarted: () => set({ status: 'IN_PROGRESS' }),
+  handleRoundStart: (data) => set((s) => ({
+    currentRound: data.roundNumber,
+    claimedNotes: data.claimedNotes || s.claimedNotes,
+    config: data.timerSecs ? { ...s.config, roundTimer: data.timerSecs } : s.config,
+    submittedPlayers: [], waitingForResults: false, roundResults: null, lastGuessResult: null,
+  })),
+  handlePlayerSubmitted: (data) => set((s) => ({
+    submittedPlayers: s.submittedPlayers.includes(data.userId) ? s.submittedPlayers : [...s.submittedPlayers, data.userId],
+  })),
+  handleGuessResult: (data) => set({ lastGuessResult: toGuessResult(data) }),
+  handleRoundReveal: (data) => set((s) => {
+    const roundClaimedNotes = (data.claimedThisRound || []).map((n) => n.note);
+    return {
+      roundResults: { ...data, roundClaimedNotes, myResult: s.lastGuessResult },
+      waitingForResults: false,
+      claimedNotes: [...new Set([...s.claimedNotes, ...roundClaimedNotes])],
+      scores: data.scoreboard ? Object.fromEntries(data.scoreboard.map((p) => [p.displayName, p.score])) : s.scores,
+    };
+  }),
+  handleMyRoundResult: (data) => set((s) => ({
+    lastGuessResult: toGuessResult({ ...data, matchedNote: data.matchedNote ? { note: data.matchedNote } : null }),
+    roundResults: s.roundResults
+      ? { ...s.roundResults, myResult: toGuessResult({ ...data, matchedNote: data.matchedNote ? { note: data.matchedNote } : null }) }
+      : s.roundResults,
+  })),
   handleGameEnded: () => set({ status: 'ENDED' }),
-  handleGamePaused: () => set({ gamePaused: true }),
-  handleGameResumed: () => set({ gamePaused: false }),
-  handlePlayerDisconnected: (data) => set((s) => ({ disconnectedPlayers: [...s.disconnectedPlayers, data.playerId] })),
-  handlePlayerReconnected: (data) => set((s) => ({ disconnectedPlayers: s.disconnectedPlayers.filter((id) => id !== data.playerId) })),
-  handleStateSync: (data) => set({ status: data.status, currentRound: data.currentRound, claimedNotes: data.claimedNotes || [], scores: data.scores || {}, players: data.players || [], submittedPlayers: data.submittedPlayers || [], disconnectedPlayers: data.disconnectedPlayers || [] }),
+  handleHostDisconnected: () => set({ gamePaused: true }),
+  handlePlayerDisconnected: (data) => set((s) => ({
+    disconnectedPlayers: s.disconnectedPlayers.includes(data.userId) ? s.disconnectedPlayers : [...s.disconnectedPlayers, data.userId],
+  })),
+  handlePlayerReconnected: (data) => set((s) => ({
+    disconnectedPlayers: s.disconnectedPlayers.filter((id) => id !== data.userId),
+    gamePaused: false,
+  })),
 
   // ── Reset ──
-  resetGame: () => set({
+  resetGame: () => {
+    socketService.disconnectSocket();
+    set({
     status: null, gameId: null, gameCode: null, bottle: null, noteRange: null, isHost: false,
     players: [], currentPlayer: null, currentRound: 1, turnOrder: [],
     claimedNotes: [], scores: {}, lastGuessResult: null, roundResults: null,
@@ -202,7 +346,8 @@ const useGameStore = create((set, get) => ({
     guestPlayerNames: [],
     config: { multiplayerType: 'PASS_THE_PHONE', gameMode: 'PARALLEL', roundTimer: 60, maxRounds: 20, optOutTiming: 'START_OF_ROUND', scoreboardVisible: true, cellarClubId: null },
     isLoading: false, error: null,
-  }),
+    });
+  },
   resetTimer: () => {},
   clearError: () => set({ error: null }),
 }));

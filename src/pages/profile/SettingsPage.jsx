@@ -188,12 +188,12 @@ export default function SettingsPage() {
 
     setPwLoading(true);
     try {
-      await auth.changePassword(pwForm.currentPassword, pwForm.newPassword);
+      await auth.changePassword({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
       toast.success('Password changed successfully.');
       setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setShowChangePassword(false);
     } catch (err) {
-      const message = err?.data?.error || 'Failed to change password.';
+      const message = err?.response?.data?.error || 'Failed to change password.';
       if (message.toLowerCase().includes('current password')) {
         setPwErrors({ currentPassword: message });
       } else {

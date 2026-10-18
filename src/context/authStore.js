@@ -13,8 +13,8 @@ const useAuthStore = create((set, get) => ({
     const token = getToken();
     if (!token) { set({ isLoading: false, isAuthenticated: false }); return; }
     try {
-      const result = await authApi.me();
-      set({ user: result.user, token, isAuthenticated: true, ageVerified: result.user.ageVerified || false, isLoading: false });
+      const user = await authApi.me();
+      set({ user, token, isAuthenticated: true, ageVerified: user.ageVerified || false, isLoading: false });
     } catch {
       clearAuth();
       set({ isLoading: false, isAuthenticated: false, token: null, user: null });
@@ -73,15 +73,17 @@ const useAuthStore = create((set, get) => ({
   checkAgeVerifyStatus: async () => {
     try {
       const result = await ageApi.status();
-      const verified = result.status === 'verified';
-      set({ ageVerified: verified, ageVerifyStatus: result.status, user: get().user ? { ...get().user, ageVerified: verified } : null });
-      return result.status;
+      const verified = result.verified === true;
+      const status = verified ? 'verified' : 'pending';
+      set({ ageVerified: verified, ageVerifyStatus: status, user: get().user ? { ...get().user, ageVerified: verified } : null });
+      return status;
     } catch { return null; }
   },
 
   devVerify: async (dateOfBirth) => {
     try {
-      await ageApi.devVerify({ dateOfBirth });
+      const result = await ageApi.devVerify({ dateOfBirth, passed: true });
+      if (!result.passed) return { success: false, error: result.reason || 'Verification failed' };
       set({ ageVerified: true, ageVerifyStatus: 'verified', user: get().user ? { ...get().user, ageVerified: true } : null });
       return { success: true };
     } catch (err) { return { success: false, error: err.message }; }

@@ -49,7 +49,8 @@ export default function ScanConfirmPage() {
     }
 
     toast.success('Bottle confirmed!');
-    navigate('/game/setup');
+    const { confirmedBottle: confirmed } = useScanStore.getState();
+    navigate('/game/setup', { state: { bottle: confirmed || bottle, noteRange: confirmed?.noteRange ?? bottle.noteRange ?? null } });
   };
 
   return (

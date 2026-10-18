@@ -2,69 +2,53 @@
  * useGameTimer — Countdown timer for gameplay rounds
  * Spec ref: Section 4.4 (Round Timer)
  *
- * - Counts down from roundTimerSecs
- * - Triggers warning at 10 seconds remaining
- * - Calls onExpire callback when timer hits 0 (auto-skip)
+ * - Counts down from durationSecs while enabled
+ * - Flags a warning at 10 seconds remaining
+ * - Calls onExpire once when the timer hits 0 (auto-skip)
+ *
+ * @param {number} durationSecs - Round length in seconds
+ * @param {boolean} enabled - Whether the countdown is running
+ * @param {function} onExpire - Called once when time runs out
+ * @returns {{ timeLeft, isWarning, isExpired, reset }}
  */
 
-import { useEffect, useRef, useCallback } from 'react';
-import useGameStore from '../context/gameStore';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
-export default function useGameTimer({ onExpire, enabled = true }) {
-  const timerRemaining = useGameStore((s) => s.timerRemaining);
-  const timerWarning = useGameStore((s) => s.timerWarning);
-  const tickTimer = useGameStore((s) => s.tickTimer);
-  const intervalRef = useRef(null);
+const WARNING_SECS = 10;
+
+export default function useGameTimer(durationSecs, enabled = true, onExpire) {
+  const [timeLeft, setTimeLeft] = useState(durationSecs);
   const expiredRef = useRef(false);
+  const onExpireRef = useRef(onExpire);
+  onExpireRef.current = onExpire;
 
-  const start = useCallback(() => {
+  const reset = useCallback(() => {
     expiredRef.current = false;
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => {
-      tickTimer();
+    setTimeLeft(durationSecs);
+  }, [durationSecs]);
+
+  // Pick up a new round length (e.g. from the server's round-start event)
+  useEffect(() => { reset(); }, [reset]);
+
+  useEffect(() => {
+    if (!enabled) return undefined;
+    const interval = setInterval(() => {
+      setTimeLeft((t) => Math.max(0, t - 1));
     }, 1000);
-  }, [tickTimer]);
+    return () => clearInterval(interval);
+  }, [enabled]);
 
-  const stop = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  }, []);
-
-  // Start/stop based on enabled prop
   useEffect(() => {
-    if (enabled) {
-      start();
-    } else {
-      stop();
-    }
-    return stop;
-  }, [enabled, start, stop]);
-
-  // Handle expiry
-  useEffect(() => {
-    if (timerRemaining <= 0 && !expiredRef.current && enabled) {
+    if (enabled && timeLeft <= 0 && !expiredRef.current) {
       expiredRef.current = true;
-      stop();
-      onExpire?.();
+      onExpireRef.current?.();
     }
-  }, [timerRemaining, onExpire, stop, enabled]);
+  }, [enabled, timeLeft]);
 
   return {
-    remaining: timerRemaining,
-    isWarning: timerWarning,
-    isExpired: timerRemaining <= 0,
-    start,
-    stop,
-    formatted: formatTime(timerRemaining),
-    progress: timerRemaining / (useGameStore.getState().config.roundTimerSecs || 60),
+    timeLeft,
+    isWarning: timeLeft <= WARNING_SECS,
+    isExpired: timeLeft <= 0,
+    reset,
   };
-}
-
-function formatTime(seconds) {
-  if (seconds == null || seconds < 0) return '0:00';
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }

@@ -19,3 +19,7 @@ Thumbs.db
 # Build output
 dist/
 dev-dist/
+
+# Playwright
+playwright-report/
+test-results/

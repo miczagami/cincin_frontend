@@ -89,6 +89,8 @@ export const auth = {
   resetPassword: ({ token, newPassword }) => api.post('/auth/password-reset', { token, newPassword }),
   changePassword: ({ currentPassword, newPassword }) =>
     api.post('/auth/change-password', { currentPassword, newPassword }),
+  verifyEmail: (token) => api.post('/auth/verify-email', { token }),
+  resendVerification: () => api.post('/auth/verify-email/resend'),
 };
 
 export const scan = {

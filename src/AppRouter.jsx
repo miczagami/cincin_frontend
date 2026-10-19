@@ -29,6 +29,7 @@ const SplashPage = lazy(() => import('./pages/auth/SplashPage'));
 const SignUpPage = lazy(() => import('./pages/auth/SignUpPage'));
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
+const VerifyEmailPage = lazy(() => import('./pages/auth/VerifyEmailPage'));
 const AgeVerifyPage = lazy(() => import('./pages/auth/AgeVerifyPage'));
 const NotificationsOnboardPage = lazy(() => import('./pages/auth/NotificationsOnboardPage'));
 
@@ -98,7 +99,8 @@ const router = createBrowserRouter([
       { index: true, element: <RedirectIfAuth><S><SplashPage /></S></RedirectIfAuth> },
       { path: 'signup', element: <RedirectIfAuth><S><SignUpPage /></S></RedirectIfAuth> },
       { path: 'login', element: <RedirectIfAuth><S><LoginPage /></S></RedirectIfAuth> },
-      { path: 'forgot-password', element: <RedirectIfAuth><S><ForgotPasswordPage /></S></RedirectIfAuth> },
+      { path: 'forgot-password', element: <S><ForgotPasswordPage /></S> },
+      { path: 'verify-email', element: <S><VerifyEmailPage /></S> },
       { path: 'age-verify', element: <S><AgeVerifyPage /></S> },
       { path: 'notifications', element: <S><NotificationsOnboardPage /></S> },
     ],

@@ -16,7 +16,7 @@
  */
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { KeyRound, Mail, ShieldCheck, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { Button, Input, ScreenHeader, Card } from '../../components/ui';
@@ -34,9 +34,12 @@ export default function ForgotPasswordPage() {
   const { t } = useTranslation();
   const toast = useToast();
 
-  const [step, setStep] = useState(STEPS.REQUEST);
+  // The emailed link carries ?token=… — open straight at the reset step
+  const [searchParams] = useSearchParams();
+  const linkToken = searchParams.get('token') || '';
+  const [step, setStep] = useState(linkToken ? STEPS.RESET : STEPS.REQUEST);
   const [email, setEmail] = useState('');
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState(linkToken);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

@@ -25,7 +25,7 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const { status, fetchStatus, openBillingPortal, isPro } = useSubscriptionStore();
-  const { user, logout } = useAuthStore();
+  const { user, logout, setUser } = useAuthStore();
 
   // ── Notification preferences ──
   const [notifPrefs, setNotifPrefs] = useState({
@@ -51,6 +51,7 @@ export default function SettingsPage() {
   const [showPwFields, setShowPwFields] = useState(false);
 
   // ── Cached Bottles (Priority 1 — NEW) ──
+  const [isResendingVerification, setIsResendingVerification] = useState(false);
   const [cachedBottleCount, setCachedBottleCount] = useState(null);
   const [isClearingCache, setIsClearingCache] = useState(false);
 
@@ -205,6 +206,24 @@ export default function SettingsPage() {
     }
   };
 
+  // ── Email verification (Section 7.2) ──
+  const handleResendVerification = async () => {
+    setIsResendingVerification(true);
+    try {
+      const res = await auth.resendVerification();
+      if (res.emailVerified) {
+        setUser({ ...user, emailVerified: true });
+        toast.success('Your email is already verified.');
+      } else {
+        toast.success(`Verification email sent to ${user?.email}.`);
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Could not send the verification email.');
+    } finally {
+      setIsResendingVerification(false);
+    }
+  };
+
   // ── Priority 1: Clear Cache ──
   const handleClearCache = async () => {
     if (cachedBottleCount === 0) {
@@ -252,6 +271,17 @@ export default function SettingsPage() {
       {/* ── Account Section ── */}
       <div className="mt-5">
         <h3 className="text-[11px] font-bold text-cin-muted uppercase tracking-wider mb-2">Account</h3>
+        {user && !user.emailVerified && (
+          <Card className="mb-3 border-cin-orange/40">
+            <p className="text-sm text-cin-white font-body">Verify your email</p>
+            <p className="text-[11px] text-cin-muted mt-0.5 mb-3">
+              Needed to create or join Cellar Clubs and to subscribe. We'll send a link to {user.email}.
+            </p>
+            <Button variant="secondary" loading={isResendingVerification} onClick={handleResendVerification}>
+              Send verification email
+            </Button>
+          </Card>
+        )}
         <Card>
           {/* Edit Profile */}
           <SettingsRow label="Edit profile" onAction={() => navigate('/profile')} />

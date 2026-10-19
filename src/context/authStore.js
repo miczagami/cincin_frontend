@@ -50,7 +50,7 @@ const useAuthStore = create((set, get) => ({
   socialLogin: async (provider, providerToken) => {
     set({ isLoading: true });
     try {
-      const result = await authApi.socialLogin({ provider, token: providerToken });
+      const result = await authApi.socialLogin({ provider: provider.toUpperCase(), token: providerToken });
       setAuth({ accessToken: result.accessToken, refreshToken: result.refreshToken });
       set({ user: result.user, token: result.accessToken, isAuthenticated: true, ageVerified: result.user.ageVerified || false, isLoading: false });
       return { success: true };

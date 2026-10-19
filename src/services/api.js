@@ -104,6 +104,8 @@ export const scan = {
 export const ageVerify = {
   initiate: (data) => api.post('/auth/age-verify/initiate', data),
   status: () => api.get('/auth/age-verify/status'),
+  /** Call after the user finishes the provider SDK flow — starts the provider-side check */
+  submit: () => api.post('/auth/age-verify/submit'),
   /** Dev-only manual verification (backend rejects this in production) */
   devVerify: (data) => api.post('/auth/age-verify/manual', data),
 };

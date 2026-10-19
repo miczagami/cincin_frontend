@@ -42,7 +42,7 @@ export default defineConfig({
           // Priority 5: Taxonomy data — changes rarely, serve from cache
           // with background revalidation for instant offline access.
           {
-            urlPattern: /\/api\/taxonomy/i,
+            urlPattern: /\/api\/scan\/taxonomy/i,
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'taxonomy-cache',
@@ -99,7 +99,10 @@ export default defineConfig({
   ],
   server: {
     port: 3000,
-    proxy: { '/api': { target: 'http://localhost:4000', changeOrigin: true } },
+    proxy: {
+      '/api': { target: 'http://localhost:4000', changeOrigin: true },
+      '/socket.io': { target: 'http://localhost:4000', changeOrigin: true, ws: true },
+    },
   },
   resolve: { alias: { '@': '/src' } },
 });

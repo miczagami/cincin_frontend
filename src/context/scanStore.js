@@ -1,5 +1,22 @@
 import { create } from 'zustand';
-import { scan as scanApi, taxonomy as taxApi } from '../services/api';
+import { scan as scanApi } from '../services/api';
+
+// Backend scan responses are { scanId, confidence, bottle, alternatives, noteRange }.
+// The confirm screen reads topCandidate / candidates, so normalise here.
+function toScanResult(res) {
+  const top = res.bottle ? { ...res.bottle, confidence: res.confidence } : null;
+  return { ...res, topCandidate: top, candidates: [top, ...(res.alternatives || [])].filter(Boolean) };
+}
+
+async function fileToBase64(file) {
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+  return dataUrl.slice(dataUrl.indexOf(',') + 1);
+}
 
 const useScanStore = create((set, get) => ({
   scanResult: null,
@@ -15,7 +32,12 @@ const useScanStore = create((set, get) => ({
   scanLabel: async (imageFile) => {
     set({ isScanning: true, scanError: null, scanResult: null });
     try {
-      const { data } = await scanApi.label(imageFile);
+      const imageBase64 = await fileToBase64(imageFile);
+      const data = toScanResult(await scanApi.label({ imageBase64, mimeType: imageFile.type || 'image/jpeg' }));
+      if (!data.topCandidate) {
+        set({ isScanning: false, scanError: 'No matching bottle found' });
+        return { success: false, error: 'No matching bottle found' };
+      }
       set({ scanResult: data, isScanning: false });
       return { success: true, data };
     } catch (err) {
@@ -27,7 +49,11 @@ const useScanStore = create((set, get) => ({
   scanBarcode: async (barcodeData) => {
     set({ isScanning: true, scanError: null, scanResult: null });
     try {
-      const { data } = await scanApi.barcode(barcodeData);
+      const data = toScanResult(await scanApi.barcode({ barcode: barcodeData }));
+      if (!data.topCandidate) {
+        set({ isScanning: false, scanError: 'No matching bottle found' });
+        return { success: false, error: 'No matching bottle found' };
+      }
       set({ scanResult: data, isScanning: false });
       return { success: true, data };
     } catch (err) {
@@ -40,16 +66,16 @@ const useScanStore = create((set, get) => ({
     if (!query || query.length < 2) { set({ searchResults: [], searchQuery: query }); return; }
     set({ isSearching: true, searchQuery: query });
     try {
-      const { data } = await scanApi.search(query);
-      set({ searchResults: data.results || [], isSearching: false });
+      const results = await scanApi.search({ q: query });
+      set({ searchResults: Array.isArray(results) ? results : [], isSearching: false });
     } catch { set({ isSearching: false, searchResults: [] }); }
   },
 
   confirmBottle: async (bottleId) => {
     set({ isSourcing: true });
     try {
-      const { data } = await scanApi.confirm(bottleId);
-      set({ confirmedBottle: data, isSourcing: false });
+      const data = await scanApi.confirm(bottleId);
+      set({ confirmedBottle: { ...data.bottle, noteRange: data.noteRange }, isSourcing: false });
       return { success: true, data };
     } catch (err) {
       set({ isSourcing: false });
@@ -60,9 +86,10 @@ const useScanStore = create((set, get) => ({
   sourceNotes: async (bottleId) => {
     set({ isSourcing: true });
     try {
-      const { data } = await scanApi.sourceNotes(bottleId);
+      const data = await scanApi.sourceNotes(bottleId);
+      // Only keep the count — note content stays sealed until the game ends
       set((s) => ({
-        confirmedBottle: s.confirmedBottle ? { ...s.confirmedBottle, notes: data.notes, noteCount: data.count } : null,
+        confirmedBottle: s.confirmedBottle ? { ...s.confirmedBottle, noteCount: data.totalNotes } : null,
         isSourcing: false,
       }));
       return { success: true, data };
@@ -74,11 +101,11 @@ const useScanStore = create((set, get) => ({
 
   loadTaxonomy: async () => {
     if (get().taxonomyTree) return;
-    try { const { data } = await taxApi.tree(); set({ taxonomyTree: data }); } catch {}
+    try { const tree = await scanApi.taxonomyTree(); set({ taxonomyTree: tree }); } catch {}
   },
 
   searchTaxonomy: async (query) => {
-    try { const { data } = await taxApi.search(query); return data.results || []; } catch { return []; }
+    try { const results = await scanApi.taxonomySearch({ q: query }); return Array.isArray(results) ? results : []; } catch { return []; }
   },
 
   reset: () => set({

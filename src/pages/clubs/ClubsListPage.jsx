@@ -62,7 +62,7 @@ export default function ClubsListPage() {
         ) : (
           <Card className="w-full text-center py-4">
             <p className="text-sm text-cin-muted">Free accounts can join 1 club</p>
-            <button className="text-xs text-cin-cyan mt-1" onClick={() => navigate('/settings/subscription')}>Upgrade to Pro for unlimited →</button>
+            <button className="text-xs text-cin-cyan mt-1" onClick={() => navigate('/subscription')}>Upgrade to Pro for unlimited →</button>
           </Card>
         )}
       </div>

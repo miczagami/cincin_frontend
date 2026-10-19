@@ -94,7 +94,7 @@ export default function GameSetupPage() {
               <p className="text-sm font-bold text-white truncate">{bottle.name}</p>
               <p className="text-xs text-cin-muted">{bottle.producer} · {bottle.region}</p>
               {noteRange && (
-                <p className="text-xs text-cin-cyan mt-1">{noteRange.min}–{noteRange.max} tasting notes to find</p>
+                <p className="text-xs text-cin-cyan mt-1">{noteRange.low}–{noteRange.high} tasting notes to find</p>
               )}
             </div>
           </div>
@@ -156,9 +156,9 @@ export default function GameSetupPage() {
           {ROUND_OPTIONS.map((r) => (
             <button
               key={r}
-              onClick={() => updateConfig({ totalRounds: r })}
+              onClick={() => updateConfig({ maxRounds: r })}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
-                ${config.totalRounds === r
+                ${config.maxRounds === r
                   ? 'bg-cin-cyan/15 border border-cin-cyan text-cin-cyan'
                   : 'bg-cin-dark border border-cin-border text-cin-muted'}`}
             >
@@ -192,9 +192,9 @@ export default function GameSetupPage() {
           {OPT_OUT_OPTIONS.map((opt) => (
             <button
               key={opt.value}
-              onClick={() => updateConfig({ optOutRule: opt.value })}
+              onClick={() => updateConfig({ optOutTiming: opt.value })}
               className={`flex-1 py-2 px-2 rounded-lg text-[11px] font-semibold text-center transition-all
-                ${config.optOutRule === opt.value
+                ${config.optOutTiming === opt.value
                   ? 'bg-cin-cyan/15 border border-cin-cyan text-cin-cyan'
                   : 'bg-cin-dark border border-cin-border text-cin-muted'}`}
             >

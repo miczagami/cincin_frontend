@@ -28,24 +28,39 @@ api.interceptors.request.use((config) => {
 });
 
 // ─── Response interceptor: auto-refresh on 401 ───
+// Refresh tokens are single-use (the backend rotates them and revokes the session if
+// one is reused), so concurrent 401s must share one refresh call.
+let refreshInFlight = null;
+
+function refreshSession() {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      const refreshToken = sessionStorage.getItem('cin_refresh_token');
+      if (!refreshToken) throw new Error('No refresh token');
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_API_URL || ''}/api/auth/refresh`,
+        { refreshToken }
+      );
+      sessionStorage.setItem('cin_access_token', data.accessToken);
+      sessionStorage.setItem('cin_refresh_token', data.refreshToken);
+      return data.accessToken;
+    })().finally(() => { refreshInFlight = null; });
+  }
+  return refreshInFlight;
+}
+
+// 401s from these mean bad credentials, not an expired session
+const CREDENTIAL_ENDPOINTS = /^\/auth\/(login|signup|social|refresh|change-password|password-reset|verify-email)/;
+
 api.interceptors.response.use(
   (res) => res.data,
   async (err) => {
     const original = err.config;
-    if (err.response?.status === 401 && !original._retry) {
+    if (err.response?.status === 401 && !original._retry && !CREDENTIAL_ENDPOINTS.test(original.url || '')) {
       original._retry = true;
       try {
-        const refreshToken = sessionStorage.getItem('cin_refresh_token');
-        if (!refreshToken) throw new Error('No refresh token');
-        const { data } = await axios.post(
-  `${import.meta.env.VITE_API_URL || ''}/api/auth/refresh`,
-  { refreshToken }
-);
-        sessionStorage.setItem('cin_access_token', data.accessToken);
-        if (data.refreshToken) {
-          sessionStorage.setItem('cin_refresh_token', data.refreshToken);
-        }
-        original.headers.Authorization = `Bearer ${data.accessToken}`;
+        const accessToken = await refreshSession();
+        original.headers.Authorization = `Bearer ${accessToken}`;
         return api(original);
       } catch {
         sessionStorage.removeItem('cin_access_token');

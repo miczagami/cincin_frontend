@@ -14,6 +14,25 @@ test('login survives a page reload', async ({ browser }) => {
   await expect(page.getByText('Test Host').first()).toBeVisible();
 });
 
+test('concurrent requests after the access token expires share one refresh', async ({ browser }) => {
+  const page = await signIn(browser, 'host@test.com');
+  const refreshes = [];
+  page.on('request', (req) => { if (req.url().endsWith('/api/auth/refresh')) refreshes.push(req); });
+
+  const results = await page.evaluate(async () => {
+    const { default: api } = await import('/src/services/api.js');
+    sessionStorage.setItem('cin_access_token', 'expired.or.invalid');
+    const calls = await Promise.allSettled([api.get('/users/me'), api.get('/clubs'), api.get('/notifications')]);
+    return calls.map((c) => c.status);
+  });
+
+  expect(results).toEqual(['fulfilled', 'fulfilled', 'fulfilled']);
+  // Refresh tokens are single-use: a second refresh with the same token would revoke the session
+  expect(refreshes).toHaveLength(1);
+  await page.reload();
+  await expect(page).not.toHaveURL(/\/auth/);
+});
+
 test('signup → age verification (dev) → onboarding', async ({ page }) => {
   await signUp(page, { name: 'E2E User', email: `e2e${Date.now()}@test.com` });
   await page.getByText('[Dev] Skip verification').click();

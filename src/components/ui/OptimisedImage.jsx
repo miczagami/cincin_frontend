@@ -20,6 +20,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
+import { colors } from '../../theme/brand';
 
 export default function OptimisedImage({
   src,
@@ -29,7 +30,7 @@ export default function OptimisedImage({
   className = '',
   style = {},
   priority = false,
-  fallbackBg = '#1A1A1A',
+  fallbackBg = colors.card,
   ...props
 }) {
   const [hasError, setHasError] = useState(false);
@@ -61,7 +62,7 @@ export default function OptimisedImage({
           height="24"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#666"
+          stroke={colors.muted}
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"

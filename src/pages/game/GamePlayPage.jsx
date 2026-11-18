@@ -136,10 +136,10 @@ export default function GamePlayPage() {
   // ── Game paused overlay (Section 4.9: host disconnected) ──
   if (gamePaused) {
     return (
-      <div className="min-h-dvh bg-cin-black flex items-center justify-center px-5">
+      <div className="min-h-dvh bg-cin-espresso flex items-center justify-center px-5">
         <Card className="text-center">
           <span className="text-4xl mb-4 block">⏸️</span>
-          <h3 className="text-cin-white text-lg font-bold mb-2">Game Paused</h3>
+          <h3 className="text-cin-cream text-lg font-bold mb-2">Game Paused</h3>
           <p className="text-cin-muted text-sm">The host has disconnected. Waiting for them to reconnect...</p>
           <p className="text-cin-muted text-xs mt-2">Game will end if the host doesn't return within 2 minutes.</p>
         </Card>
@@ -150,10 +150,10 @@ export default function GamePlayPage() {
   // ── Interstitial (pass-the-phone only) ──
   if (phase === PHASE.INTERSTITIAL && !isMultiDevice) {
     return (
-      <div className="min-h-dvh bg-cin-black flex flex-col items-center justify-center px-5">
+      <div className="min-h-dvh bg-cin-espresso flex flex-col items-center justify-center px-5">
         <span className="text-5xl mb-6">📱</span>
-        <h2 className="text-cin-white text-xl font-bold mb-2">Pass the phone to</h2>
-        <p className="text-cin-cyan text-2xl font-bold mb-8">
+        <h2 className="text-cin-cream text-xl font-bold mb-2">Pass the phone to</h2>
+        <p className="text-cin-gold text-2xl font-bold mb-8">
           {currentPlayer?.displayName || currentPlayer?.name || 'Next Player'}
         </p>
 
@@ -177,14 +177,14 @@ export default function GamePlayPage() {
   // ── Waiting for other players (multi-device, Phase 3) ──
   if (phase === PHASE.WAITING) {
     return (
-      <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8">
+      <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
         {ConnectionBanner}
         <div className="text-center mt-12">
           <div className="animate-pulse text-5xl mb-6">⏳</div>
-          <h2 className="text-cin-white text-xl font-bold mb-2">Guess Submitted!</h2>
+          <h2 className="text-cin-cream text-xl font-bold mb-2">Guess Submitted!</h2>
           <p className="text-cin-muted text-sm mb-6">Waiting for other players...</p>
-          <div className="w-full max-w-xs mx-auto bg-cin-dark rounded-full h-3 mb-4">
-            <div className="bg-cin-cyan h-3 rounded-full transition-all duration-500"
+          <div className="w-full max-w-xs mx-auto bg-cin-surface rounded-full h-3 mb-4">
+            <div className="bg-cin-gold h-3 rounded-full transition-all duration-500"
               style={{ width: `${totalPlayers > 0 ? (submittedCount / totalPlayers) * 100 : 0}%` }} />
           </div>
           <p className="text-cin-muted text-sm">{submittedCount} / {totalPlayers} submitted</p>
@@ -203,7 +203,7 @@ export default function GamePlayPage() {
     const result = isMultiDevice ? roundResults : lastGuessResult;
     const myResult = result?.myResult || result;
     return (
-      <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8">
+      <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
         {ConnectionBanner}
         <div className="text-center mt-8">
           <p className="text-cin-muted text-sm mb-2">Round {currentRound}</p>
@@ -211,12 +211,12 @@ export default function GamePlayPage() {
           {myResult && (
             <Card className={`mb-4 border-${myResult.correct ? 'cin-green' : 'cin-red'}/30`}>
               <span className="text-3xl">{myResult.correct ? '✅' : '❌'}</span>
-              <p className="text-cin-white text-lg font-bold mt-2">{myResult.correct ? 'Correct!' : 'Wrong'}</p>
+              <p className="text-cin-cream text-lg font-bold mt-2">{myResult.correct ? 'Correct!' : 'Wrong'}</p>
               <p className="text-cin-muted text-sm">
                 {myResult.correct ? `+${myResult.points} points` : `${myResult.points} points`}
               </p>
               {myResult.precisionTip && (
-                <p className="text-cin-cyan text-xs mt-2">{myResult.precisionTip}</p>
+                <p className="text-cin-gold text-xs mt-2">{myResult.precisionTip}</p>
               )}
             </Card>
           )}
@@ -236,7 +236,7 @@ export default function GamePlayPage() {
               {Object.entries(scores).sort(([, a], [, b]) => b - a).map(([name, score], i) => (
                 <div key={name} className="flex items-center justify-between py-1">
                   <span className="text-cin-text text-sm">{i + 1}. {name}</span>
-                  <span className="text-cin-white font-bold">{score}</span>
+                  <span className="text-cin-cream font-bold">{score}</span>
                 </div>
               ))}
             </Card>
@@ -254,7 +254,7 @@ export default function GamePlayPage() {
 
   // ── Guessing phase ──
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
       {ConnectionBanner}
 
       {/* Round & timer header */}
@@ -262,19 +262,19 @@ export default function GamePlayPage() {
         <div>
           <p className="text-cin-muted text-xs">Round {currentRound}</p>
           {!isMultiDevice && currentPlayer && (
-            <p className="text-cin-white text-sm font-medium">
+            <p className="text-cin-cream text-sm font-medium">
               {currentPlayer.displayName || currentPlayer.name}'s turn
             </p>
           )}
         </div>
-        <div className={`text-2xl font-mono font-bold ${isWarning ? 'text-cin-red animate-pulse' : 'text-cin-white'}`}>
+        <div className={`text-2xl font-display font-extrabold tabular-nums ${isWarning ? 'text-cin-red animate-pulse' : 'text-cin-cream'}`}>
           {timeLeft}s
         </div>
       </div>
 
       {/* Timer bar */}
-      <div className="w-full bg-cin-dark rounded-full h-2 mb-6">
-        <div className={`h-2 rounded-full transition-all duration-1000 ${isWarning ? 'bg-cin-red' : 'bg-cin-cyan'}`}
+      <div className="w-full bg-cin-surface rounded-full h-2 mb-6">
+        <div className={`h-2 rounded-full transition-all duration-1000 ${isWarning ? 'bg-cin-red' : 'bg-cin-gold'}`}
           style={{ width: `${(timeLeft / timerDuration) * 100}%` }} />
       </div>
 
@@ -301,10 +301,10 @@ export default function GamePlayPage() {
         {taxonomySuggestions.length > 0 && (
           <div className="mt-2 max-h-40 overflow-y-auto">
             {taxonomySuggestions.map((s, i) => (
-              <button key={i} className="w-full text-left px-3 py-2 text-cin-text text-sm hover:bg-cin-dark rounded"
+              <button key={i} className="w-full text-left px-3 py-2 text-cin-text text-sm hover:bg-cin-surface rounded"
                 onClick={() => { setGuessText(s.name); inputRef.current?.focus(); }}>
                 <span>{s.name}</span>
-                {s.isSpecific && <span className="text-cin-cyan text-xs ml-2">+bonus</span>}
+                {s.isSpecific && <span className="text-cin-gold text-xs ml-2">+bonus</span>}
               </button>
             ))}
           </div>
@@ -321,9 +321,9 @@ export default function GamePlayPage() {
         </button>
       ) : (
         <Card className="border-cin-red/30">
-          <p className="text-cin-white text-sm mb-3">Are you sure? Your score will be locked and you can't rejoin.</p>
+          <p className="text-cin-cream text-sm mb-3">Are you sure? Your score will be locked and you can't rejoin.</p>
           <div className="flex gap-3">
-            <Button variant="secondary" className="flex-1" onClick={() => setConfirmOptOut(false)}>Cancel</Button>
+            <Button variant="outline" className="flex-1" onClick={() => setConfirmOptOut(false)}>Cancel</Button>
             <Button variant="primary" className="flex-1 !bg-cin-red" onClick={handleOptOut}>Opt Out</Button>
           </div>
         </Card>
@@ -338,12 +338,12 @@ export default function GamePlayPage() {
 
       {/* End game confirmation modal */}
       {confirmEndGame && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-5">
+        <div className="fixed inset-0 bg-cin-espresso/80 flex items-center justify-center z-50 px-5">
           <Card className="w-full max-w-sm">
-            <h3 className="text-cin-white font-semibold text-lg mb-2">End Game?</h3>
+            <h3 className="text-cin-cream font-semibold text-lg mb-2">End Game?</h3>
             <p className="text-cin-muted text-sm mb-4">All players will see results based on current scores.</p>
             <div className="flex gap-3">
-              <Button variant="secondary" className="flex-1" onClick={() => setConfirmEndGame(false)}>Cancel</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setConfirmEndGame(false)}>Cancel</Button>
               <Button variant="primary" className="flex-1 !bg-cin-red" onClick={async () => { await endGame(); }}>End Game</Button>
             </div>
           </Card>

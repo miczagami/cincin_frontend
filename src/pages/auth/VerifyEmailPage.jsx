@@ -46,7 +46,7 @@ export default function VerifyEmailPage() {
   }, [params, setUser]);
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-10 animate-fade-in">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-10 animate-fade-in">
       <ScreenHeader title="Verify Email" />
       <Card className="mt-8 text-center">
         {status === 'verifying' && (
@@ -58,14 +58,14 @@ export default function VerifyEmailPage() {
         {status === 'success' && (
           <>
             <span className="text-4xl">✅</span>
-            <p className="text-cin-white font-display font-bold mt-3">Email verified</p>
+            <p className="text-cin-cream font-display font-bold mt-3">Email verified</p>
             <p className="text-sm text-cin-muted font-body mt-1">You can now create and join Cellar Clubs and subscribe to Pro.</p>
           </>
         )}
         {status === 'error' && (
           <>
             <span className="text-4xl">⚠️</span>
-            <p className="text-cin-white font-display font-bold mt-3">Couldn't verify your email</p>
+            <p className="text-cin-cream font-display font-bold mt-3">Couldn't verify your email</p>
             <p className="text-sm text-cin-muted font-body mt-1">{message}</p>
             {isAuthenticated && (
               <p className="text-xs text-cin-muted font-body mt-3">You can request a new link from Settings.</p>

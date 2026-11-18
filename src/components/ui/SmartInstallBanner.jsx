@@ -14,6 +14,8 @@
  */
 
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
+import { colors, alpha } from '../../theme/brand';
+import Logo from '../brand/Logo';
 
 export default function SmartInstallBanner() {
   const { shouldShow, install, dismiss } = useInstallPrompt();
@@ -30,25 +32,19 @@ export default function SmartInstallBanner() {
       <div
         className="max-w-[430px] mx-auto rounded-xl p-4 flex items-center gap-3"
         style={{
-          background: 'linear-gradient(135deg, #1A1A1A 0%, rgba(34,211,238,0.08) 100%)',
-          border: '1px solid rgba(34,211,238,0.2)',
+          background: `linear-gradient(135deg, ${colors.card} 0%, ${alpha(colors.merlot, 0.35)} 100%)`,
+          border: `1px solid ${alpha(colors.gold, 0.25)}`,
           boxShadow: '0 -4px 24px rgba(0,0,0,0.4)',
         }}
       >
         {/* App icon */}
-        <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{
-            background: 'linear-gradient(135deg, #0A0A0A, #1A1A1A)',
-            border: '1px solid rgba(34,211,238,0.3)',
-          }}
-        >
-          <span className="text-cin-cyan text-lg font-display font-bold">C</span>
+        <div className="w-10 h-10 rounded-[10px] bg-cin-espresso flex items-center justify-center flex-shrink-0">
+          <Logo variant="mark" width={30} aria-hidden="true" />
         </div>
 
         {/* Text */}
         <div className="flex-1 min-w-0">
-          <p className="text-white text-sm font-display font-bold leading-tight">
+          <p className="text-cin-cream text-sm font-display font-bold leading-tight">
             Add CinCin to Home Screen
           </p>
           <p className="text-cin-muted text-xs mt-0.5">
@@ -60,14 +56,14 @@ export default function SmartInstallBanner() {
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={dismiss}
-            className="text-cin-muted text-xs hover:text-white transition-colors px-2 py-1"
+            className="text-cin-muted text-xs hover:text-cin-cream transition-colors px-2 py-1"
             aria-label="Dismiss install banner"
           >
             Later
           </button>
           <button
             onClick={install}
-            className="bg-cin-cyan text-cin-black text-xs font-bold px-4 py-2 rounded-lg hover:brightness-110 transition-all"
+            className="bg-cin-gold text-cin-espresso text-xs font-bold px-4 py-2 rounded-lg hover:brightness-110 transition-all"
           >
             Install
           </button>

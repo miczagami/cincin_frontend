@@ -15,6 +15,7 @@ import { Apple, Chrome } from 'lucide-react';
 import { Button, Input, ScreenHeader, Divider } from '../../components/ui';
 import useAuthStore from '../../context/authStore';
 import useToast from '../../hooks/useToast';
+import Logo from '../../components/brand/Logo';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -58,18 +59,19 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-10 animate-fade-in">
-      <ScreenHeader title={t('auth.signIn')} subtitle="Welcome back to CinCin" />
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-10 animate-fade-in">
+      <div className="px-5 pt-2 pb-2"><Logo variant="mark" width={64} /></div>
+      <ScreenHeader title={t('auth.signIn')} subtitle="Welcome back. Your table's waiting." />
       <div className="mt-6 space-y-3">
         <button
           onClick={() => handleSocial('apple')}
-          className="cin-card w-full flex items-center gap-3 cursor-pointer text-cin-white text-sm font-body"
+          className="cin-btn-outline"
         >
           <Apple className="w-5 h-5" /> {t('auth.continueApple')}
         </button>
         <button
           onClick={() => handleSocial('google')}
-          className="cin-card w-full flex items-center gap-3 cursor-pointer text-cin-white text-sm font-body"
+          className="cin-btn-outline"
         >
           <Chrome className="w-5 h-5" /> {t('auth.continueGoogle')}
         </button>
@@ -94,7 +96,7 @@ export default function LoginPage() {
         <div className="pt-2">
           <Button loading={isLoading} onClick={handleSubmit}>{t('auth.signIn')}</Button>
         </div>
-        <button onClick={() => navigate('/auth/forgot-password')} className="cin-btn-ghost w-full text-cin-cyan">
+        <button onClick={() => navigate('/auth/forgot-password')} className="cin-btn-ghost w-full text-cin-gold">
           {t('auth.forgotPassword')}
         </button>
         <button onClick={() => navigate('/auth/signup')} className="cin-btn-ghost w-full">

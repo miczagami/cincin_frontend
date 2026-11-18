@@ -259,12 +259,12 @@ export default function SettingsPage() {
   // ═══════════════════════════════════════════
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
       <ScreenHeader title="Settings" onBack={() => navigate('/profile')} />
 
       {isExporting && (
-        <div className="bg-cin-cyan/10 border border-cin-cyan/30 rounded-lg p-3 mt-2">
-          <p className="text-cin-cyan text-sm">Exporting your data...</p>
+        <div className="bg-cin-gold/10 border border-cin-gold/30 rounded-lg p-3 mt-2">
+          <p className="text-cin-gold text-sm">Exporting your data...</p>
         </div>
       )}
 
@@ -273,11 +273,11 @@ export default function SettingsPage() {
         <h3 className="text-[11px] font-bold text-cin-muted uppercase tracking-wider mb-2">Account</h3>
         {user && !user.emailVerified && (
           <Card className="mb-3 border-cin-orange/40">
-            <p className="text-sm text-cin-white font-body">Verify your email</p>
+            <p className="text-sm text-cin-cream font-body">Verify your email</p>
             <p className="text-[11px] text-cin-muted mt-0.5 mb-3">
               Needed to create or join Cellar Clubs and to subscribe. We'll send a link to {user.email}.
             </p>
-            <Button variant="secondary" loading={isResendingVerification} onClick={handleResendVerification}>
+            <Button variant="outline" loading={isResendingVerification} onClick={handleResendVerification}>
               Send verification email
             </Button>
           </Card>
@@ -293,7 +293,7 @@ export default function SettingsPage() {
               className={`flex items-center justify-between py-3 ${isSocialOnly ? 'opacity-50' : 'cursor-pointer'}`}
             >
               <div>
-                <span className="text-sm text-cin-white font-body">Change password</span>
+                <span className="text-sm text-cin-cream font-body">Change password</span>
                 {isSocialOnly && (
                   <p className="text-[11px] text-cin-muted mt-0.5">Not available for social login accounts</p>
                 )}
@@ -338,7 +338,7 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setShowPwFields(!showPwFields)}
-                    className="text-cin-muted hover:text-cin-white transition-colors flex items-center gap-1 text-xs"
+                    className="text-cin-muted hover:text-cin-cream transition-colors flex items-center gap-1 text-xs"
                   >
                     {showPwFields ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     {showPwFields ? 'Hide' : 'Show'} passwords
@@ -355,7 +355,7 @@ export default function SettingsPage() {
 
                 <div className="flex gap-2">
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     onClick={() => {
                       setShowChangePassword(false);
                       setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -398,7 +398,7 @@ export default function SettingsPage() {
                 i < arr.length - 1 ? 'border-b border-cin-border' : ''
               }`}
             >
-              <span className="text-sm text-cin-white font-body">{item.label}</span>
+              <span className="text-sm text-cin-cream font-body">{item.label}</span>
               <Toggle
                 checked={notifPrefs[item.key]}
                 onChange={() => handleNotifToggle(item.key)}
@@ -443,7 +443,7 @@ export default function SettingsPage() {
           {isPro() && (
             <div className="flex items-center justify-between py-3 border-b border-cin-border">
               <div>
-                <span className="text-sm text-cin-white font-body">B2B data sharing</span>
+                <span className="text-sm text-cin-cream font-body">B2B data sharing</span>
                 <p className="text-[11px] text-cin-muted mt-0.5">Allow anonymised data for industry insights</p>
               </div>
               <Toggle checked={b2bOptIn} onChange={handleB2BToggle} />
@@ -479,7 +479,7 @@ export default function SettingsPage() {
       {/* ── Log Out ── */}
       <div className="mt-6">
         <Button
-          variant="secondary"
+          variant="outline"
           onClick={() => {
             logout();
             toast.info('Logged out.');
@@ -492,14 +492,14 @@ export default function SettingsPage() {
 
       {/* ── Delete Account Confirmation Modal ── */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-5">
+        <div className="fixed inset-0 bg-cin-espresso/80 z-50 flex items-center justify-center p-5">
           <div className="cin-card max-w-sm w-full p-6">
-            <h3 className="text-lg font-display font-bold text-cin-white mb-2">Delete Account?</h3>
+            <h3 className="text-lg font-display font-bold text-cin-cream mb-2">Delete Account?</h3>
             <p className="text-sm text-cin-muted font-body mb-6 leading-relaxed">
               This permanently deletes your account and all associated data. This cannot be undone.
             </p>
             <div className="flex gap-3">
-              <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)} className="flex-1">
+              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} className="flex-1">
                 Cancel
               </Button>
               <button
@@ -526,7 +526,7 @@ function SettingsRow({ label, value, onAction, toggle, danger, isLast, loading, 
       } ${onAction ? 'cursor-pointer' : ''}`}
     >
       <div>
-        <span className={`text-sm font-body ${danger ? 'text-cin-red' : 'text-cin-white'}`}>
+        <span className={`text-sm font-body ${danger ? 'text-cin-red' : 'text-cin-cream'}`}>
           {label}
         </span>
         {sublabel && <p className="text-[11px] text-cin-muted mt-0.5">{sublabel}</p>}

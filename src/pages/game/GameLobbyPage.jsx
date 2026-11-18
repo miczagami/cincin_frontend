@@ -75,7 +75,7 @@ export default function GameLobbyPage() {
   const canStart = isHost && allPlayers.length >= 2;
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
       <ScreenHeader
         title="Game Lobby"
         subtitle={bottle ? `${bottle.name} ${bottle.vintage || ''}`.trim() : ''}
@@ -94,7 +94,7 @@ export default function GameLobbyPage() {
         <Card className="mb-4 text-center">
           <p className="text-cin-muted text-xs uppercase tracking-wider mb-2">Game Code</p>
           <button
-            className="text-cin-cyan text-3xl font-mono tracking-[0.3em] font-bold"
+            className="text-cin-gold text-3xl font-mono tracking-[0.3em] font-bold"
             onClick={handleShareCode}
             title="Tap to share"
           >
@@ -108,7 +108,7 @@ export default function GameLobbyPage() {
 
       {/* Mode indicator */}
       <div className="flex items-center justify-between mb-4">
-        <Pill variant="cyan">
+        <Pill color="gold">
           {config.multiplayerType === 'PASS_THE_PHONE' ? 'Pass the Phone' :
            config.multiplayerType === 'MULTI_DEVICE' ? 'Multi-Device' : 'Remote'}
         </Pill>
@@ -132,13 +132,13 @@ export default function GameLobbyPage() {
         </div>
         {allPlayers.map((player, i) => (
           <div key={player.id || i} className="flex items-center gap-3 py-2 border-b border-cin-border last:border-0">
-            <div className="w-8 h-8 rounded-full bg-cin-dark flex items-center justify-center text-cin-muted text-sm font-bold">
+            <div className="w-8 h-8 rounded-full bg-cin-surface flex items-center justify-center text-cin-muted text-sm font-bold">
               {(player.displayName || player.name || '?')[0].toUpperCase()}
             </div>
-            <span className="text-cin-white text-sm flex-1">
+            <span className="text-cin-cream text-sm flex-1">
               {player.displayName || player.name}
             </span>
-            {player.isHost && <Pill variant="cyan" size="sm">Host</Pill>}
+            {player.isHost && <Pill color="gold" className="text-[10px]">Host</Pill>}
             {player.isGuest && <Pill variant="muted" size="sm">Guest</Pill>}
           </div>
         ))}
@@ -163,7 +163,7 @@ export default function GameLobbyPage() {
       {/* Non-host waiting message */}
       {!isHost && (
         <Card className="text-center">
-          <div className="animate-pulse text-cin-cyan text-lg mb-2">⏳</div>
+          <div className="animate-pulse text-cin-gold text-lg mb-2">⏳</div>
           <p className="text-cin-muted text-sm">Waiting for host to start the game...</p>
         </Card>
       )}

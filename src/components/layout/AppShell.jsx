@@ -19,8 +19,8 @@ export default function AppShell() {
   usePushNotifications();
 
   return (
-    <div className="min-h-dvh bg-cin-black">
-      <main className="pb-24">
+    <div className="min-h-dvh bg-cin-espresso">
+      <main id="main-content" className="pb-24">
         <Outlet />
       </main>
       <BottomNav />

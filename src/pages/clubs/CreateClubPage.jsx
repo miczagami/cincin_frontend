@@ -31,12 +31,12 @@ export default function CreateClubPage() {
 
   if (!user?.emailVerified) {
     return (
-      <div className="min-h-dvh bg-cin-black px-5 pt-5">
+      <div className="min-h-dvh bg-cin-espresso px-5 pt-5">
         <ScreenHeader title="Create Club" onBack={() => navigate('/clubs')} />
         <Card className="mt-8">
-          <p className="text-cin-white text-center mb-4">Verify your email to create a Cellar Club.</p>
+          <p className="text-cin-cream text-center mb-4">Verify your email to create a Cellar Club.</p>
           <p className="text-cin-muted text-sm text-center mb-4">Check your inbox for a verification link.</p>
-          <Button variant="secondary" onClick={() => navigate('/settings')}>Go to Settings</Button>
+          <Button variant="outline" onClick={() => navigate('/settings')}>Go to Settings</Button>
         </Card>
       </div>
     );
@@ -56,7 +56,7 @@ export default function CreateClubPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
       <ScreenHeader title="Create Club" onBack={() => navigate('/clubs')} />
       <Card className="mb-4">
         <label className="text-cin-muted text-xs uppercase tracking-wider mb-2 block">Club Name</label>
@@ -71,8 +71,8 @@ export default function CreateClubPage() {
         <label className="text-cin-muted text-xs uppercase tracking-wider mb-3 block">Season Type</label>
         <div className="space-y-2">
           {SEASON_TYPES.map((type) => (
-            <button key={type.value} className={`w-full text-left p-3 rounded-lg border transition-colors ${seasonType === type.value ? 'border-cin-cyan bg-cin-cyan/10' : 'border-cin-border'}`} onClick={() => setSeasonType(type.value)}>
-              <p className={`text-sm font-medium ${seasonType === type.value ? 'text-cin-cyan' : 'text-cin-white'}`}>{type.label}</p>
+            <button key={type.value} className={`w-full text-left p-3 rounded-lg border transition-colors ${seasonType === type.value ? 'border-cin-gold bg-cin-gold/10' : 'border-cin-border'}`} onClick={() => setSeasonType(type.value)}>
+              <p className={`text-sm font-medium ${seasonType === type.value ? 'text-cin-gold' : 'text-cin-cream'}`}>{type.label}</p>
               <p className="text-cin-muted text-xs">{type.desc}</p>
             </button>
           ))}
@@ -89,7 +89,7 @@ export default function CreateClubPage() {
           <label className="text-cin-muted text-xs uppercase tracking-wider mb-3 block">Season Length</label>
           <div className="grid grid-cols-2 gap-2">
             {LENGTH_PRESETS.map((p) => (
-              <button key={p.value} className={`p-3 rounded-lg border text-sm font-medium ${lengthDays === p.value ? 'border-cin-cyan bg-cin-cyan/10 text-cin-cyan' : 'border-cin-border text-cin-muted'}`} onClick={() => setLengthDays(p.value)}>{p.label}</button>
+              <button key={p.value} className={`p-3 rounded-lg border text-sm font-medium ${lengthDays === p.value ? 'border-cin-gold bg-cin-gold/10 text-cin-gold' : 'border-cin-border text-cin-muted'}`} onClick={() => setLengthDays(p.value)}>{p.label}</button>
             ))}
           </div>
         </Card>

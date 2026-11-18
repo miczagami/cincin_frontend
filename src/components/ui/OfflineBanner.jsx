@@ -15,6 +15,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { colors, alpha } from '../../theme/brand';
 
 export function OfflineBanner({ isCachedData, lastCachedAt, onRefresh }) {
   const [dismissed, setDismissed] = useState(false);
@@ -32,8 +33,8 @@ export function OfflineBanner({ isCachedData, lastCachedAt, onRefresh }) {
     <div
       className="flex items-center gap-2 px-3 py-2 rounded-lg mb-3"
       style={{
-        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-        border: '1px solid rgba(245, 158, 11, 0.2)',
+        backgroundColor: alpha(colors.orange, 0.12),
+        border: `1px solid ${alpha(colors.orange, 0.25)}`,
       }}
     >
       {/* Offline icon */}
@@ -42,7 +43,7 @@ export function OfflineBanner({ isCachedData, lastCachedAt, onRefresh }) {
         height="14"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="#F59E0B"
+        stroke={colors.orange}
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -57,7 +58,7 @@ export function OfflineBanner({ isCachedData, lastCachedAt, onRefresh }) {
         <line x1="12" y1="20" x2="12.01" y2="20" />
       </svg>
 
-      <p className="text-xs flex-1" style={{ color: '#F59E0B' }}>
+      <p className="text-xs flex-1" style={{ color: colors.orange }}>
         Viewing offline data{staleness ? ` · ${staleness}` : ''}
       </p>
 
@@ -65,7 +66,7 @@ export function OfflineBanner({ isCachedData, lastCachedAt, onRefresh }) {
         <button
           onClick={onRefresh}
           className="text-xs font-medium px-2 py-0.5 rounded"
-          style={{ color: '#22D3EE', backgroundColor: 'rgba(34, 211, 238, 0.1)' }}
+          style={{ color: colors.gold, backgroundColor: alpha(colors.gold, 0.12) }}
         >
           Refresh
         </button>
@@ -74,7 +75,7 @@ export function OfflineBanner({ isCachedData, lastCachedAt, onRefresh }) {
       <button
         onClick={() => setDismissed(true)}
         className="text-xs opacity-50 hover:opacity-100 ml-1"
-        style={{ color: '#F59E0B' }}
+        style={{ color: colors.orange }}
         aria-label="Dismiss"
       >
         ✕
@@ -109,7 +110,7 @@ export function GlobalOfflineBanner() {
     <div
       className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center py-1.5 px-4"
       style={{
-        backgroundColor: 'rgba(239, 68, 68, 0.95)',
+        backgroundColor: colors.merlot,
         paddingTop: 'max(6px, env(safe-area-inset-top))',
       }}
     >
@@ -118,7 +119,7 @@ export function GlobalOfflineBanner() {
         height="12"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="white"
+        stroke={colors.cream}
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -129,7 +130,7 @@ export function GlobalOfflineBanner() {
         <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" />
         <line x1="12" y1="20" x2="12.01" y2="20" />
       </svg>
-      <p className="text-white text-xs font-medium">
+      <p className="text-cin-cream text-xs font-medium">
         You're offline — some features may be limited
       </p>
     </div>

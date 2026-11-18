@@ -12,28 +12,32 @@
  *   or downloads as PNG fallback.
  * - No S3 upload required — generates client-side for immediate sharing.
  * - Card design matches CinCin brand: dark background, cyan accents,
- *   gradient overlays, DM Sans typography.
+ *   gradient overlays, Poppins typography.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import usePalateStore from '../../context/palateStore';
 import { ScreenHeader, Button, Card, Spinner } from '../../components/ui';
+import { drawLogo } from '../../components/brand/Logo';
+import { colors, alpha } from '../../theme/brand';
 
-// ── Brand colours ──
+// ── Brand colours (src/theme/brand.js) ──
 const COLOURS = {
-  black: '#0A0A0A',
-  dark: '#141414',
-  card: '#1A1A1A',
-  border: '#2A2A2A',
-  muted: '#666666',
-  text: '#CCCCCC',
-  white: '#FFFFFF',
-  cyan: '#22D3EE',
-  green: '#4ADE80',
-  red: '#F87171',
-  orange: '#FB923C',
+  bg: colors.espresso,
+  surface: colors.surface,
+  card: colors.card,
+  border: colors.border,
+  muted: colors.muted,
+  text: colors.text,
+  cream: colors.cream,
+  gold: colors.gold,
+  wine: colors.wine,
+  green: colors.green,
+  red: colors.red,
+  orange: colors.orange,
 };
+const FONT = '"Poppins", "Segoe UI", sans-serif';
 
 // ── Canvas card renderer ──
 function renderWrappedCard(canvas, data) {
@@ -46,19 +50,19 @@ function renderWrappedCard(canvas, data) {
   ctx.scale(dpr, dpr);
 
   // ── Background ──
-  ctx.fillStyle = COLOURS.black;
+  ctx.fillStyle = COLOURS.bg;
   ctx.fillRect(0, 0, W, H);
 
   // Radial gradient glow at top
   const grad = ctx.createRadialGradient(W / 2, 300, 50, W / 2, 300, 500);
-  grad.addColorStop(0, 'rgba(34,211,238,0.15)');
-  grad.addColorStop(1, 'rgba(34,211,238,0)');
+  grad.addColorStop(0, alpha(colors.merlot, 0.55));
+  grad.addColorStop(1, alpha(colors.merlot, 0));
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, 800);
 
   // ── Helper functions ──
-  const drawText = (text, x, y, { size = 24, weight = '400', color = COLOURS.white, align = 'center', maxWidth } = {}) => {
-    ctx.font = `${weight} ${size}px "DM Sans", "Segoe UI", sans-serif`;
+  const drawText = (text, x, y, { size = 24, weight = '400', color = COLOURS.cream, align = 'center', maxWidth } = {}) => {
+    ctx.font = `${weight} ${size}px ${FONT}`;
     ctx.fillStyle = color;
     ctx.textAlign = align;
     if (maxWidth) {
@@ -76,15 +80,14 @@ function renderWrappedCard(canvas, data) {
   };
 
   // ── CinCin branding ──
-  drawText('🍷', W / 2, 140, { size: 60 });
-  drawText('CinCin', W / 2, 210, { size: 48, weight: '900', color: COLOURS.cyan });
+  drawLogo(ctx, { cx: W / 2, top: 50, width: 200 });
 
   // ── "Palate Wrapped" pill ──
   const pillText = `Palate Wrapped · ${data.periodLabel || 'This Month'}`;
-  ctx.font = '600 18px "DM Sans", sans-serif';
+  ctx.font = `600 18px ${FONT}`;
   const pillW = ctx.measureText(pillText).width + 40;
-  drawRoundedRect((W - pillW) / 2, 240, pillW, 36, 18, 'rgba(34,211,238,0.12)', 'rgba(34,211,238,0.3)');
-  drawText(pillText, W / 2, 264, { size: 18, weight: '600', color: COLOURS.cyan });
+  drawRoundedRect((W - pillW) / 2, 240, pillW, 36, 18, alpha(colors.gold, 0.12), alpha(colors.gold, 0.35));
+  drawText(pillText, W / 2, 264, { size: 18, weight: '600', color: COLOURS.gold });
 
   // ── "Your Palate DNA" header ──
   drawText('Your Palate DNA', W / 2, 360, { size: 42, weight: '800' });
@@ -100,7 +103,7 @@ function renderWrappedCard(canvas, data) {
   const statSpacing = W / (stats.length + 1);
   stats.forEach((s, i) => {
     const sx = statSpacing * (i + 1);
-    drawText(s.value, sx, statY, { size: 56, weight: '900', color: COLOURS.cyan });
+    drawText(s.value, sx, statY, { size: 56, weight: '800', color: COLOURS.gold });
     drawText(s.label, sx, statY + 36, { size: 18, color: COLOURS.muted });
   });
 
@@ -123,14 +126,14 @@ function renderWrappedCard(canvas, data) {
     const fillW = Math.max(4, (s.accuracy / 100) * barW);
 
     // Category name + percentage
-    drawText(s.category, barX, y, { size: 18, weight: '600', align: 'left', color: COLOURS.white });
+    drawText(s.category, barX, y, { size: 18, weight: '600', align: 'left', color: COLOURS.cream });
     drawText(`${Math.round(s.accuracy)}%`, barX + barW, y, { size: 18, weight: '700', align: 'right', color: COLOURS.green });
 
     // Bar background
-    drawRoundedRect(barX, y + 8, barW, 10, 5, COLOURS.dark);
+    drawRoundedRect(barX, y + 8, barW, 10, 5, COLOURS.surface);
     // Bar fill
     const barGrad = ctx.createLinearGradient(barX, 0, barX + fillW, 0);
-    barGrad.addColorStop(0, COLOURS.cyan);
+    barGrad.addColorStop(0, COLOURS.gold);
     barGrad.addColorStop(1, COLOURS.green);
     drawRoundedRect(barX, y + 8, fillW, 10, 5, barGrad);
   });
@@ -146,10 +149,10 @@ function renderWrappedCard(canvas, data) {
     const barX = (W - barW) / 2;
     const fillW = Math.max(4, (w.accuracy / 100) * barW);
 
-    drawText(w.category, barX, y, { size: 18, weight: '600', align: 'left', color: COLOURS.white });
+    drawText(w.category, barX, y, { size: 18, weight: '600', align: 'left', color: COLOURS.cream });
     drawText(`${Math.round(w.accuracy)}%`, barX + barW, y, { size: 18, weight: '700', align: 'right', color: COLOURS.red });
 
-    drawRoundedRect(barX, y + 8, barW, 10, 5, COLOURS.dark);
+    drawRoundedRect(barX, y + 8, barW, 10, 5, COLOURS.surface);
     drawRoundedRect(barX, y + 8, fillW, 10, 5, COLOURS.red);
   });
 
@@ -163,7 +166,7 @@ function renderWrappedCard(canvas, data) {
     const dx = dtSpacing * (i + 1);
     const emoji = dt.drinkType === 'WINE' ? '🍷' : dt.drinkType === 'BEER' ? '🍺' : '🥃';
     drawText(emoji, dx, dtY + 55, { size: 40 });
-    drawText(`${Math.round(dt.accuracy)}%`, dx, dtY + 100, { size: 32, weight: '900', color: COLOURS.white });
+    drawText(`${Math.round(dt.accuracy)}%`, dx, dtY + 100, { size: 32, weight: '800', color: COLOURS.cream });
     drawText(dt.drinkType?.toLowerCase() || '', dx, dtY + 130, { size: 16, color: COLOURS.muted });
   });
 
@@ -193,8 +196,8 @@ function renderWrappedCard(canvas, data) {
     ctx.lineTo(sparkX, sparkTop + sparkH);
     ctx.closePath();
     const sparkGrad = ctx.createLinearGradient(0, sparkTop, 0, sparkTop + sparkH);
-    sparkGrad.addColorStop(0, 'rgba(34,211,238,0.2)');
-    sparkGrad.addColorStop(1, 'rgba(34,211,238,0.01)');
+    sparkGrad.addColorStop(0, alpha(colors.gold, 0.25));
+    sparkGrad.addColorStop(1, alpha(colors.gold, 0.01));
     ctx.fillStyle = sparkGrad;
     ctx.fill();
 
@@ -205,14 +208,14 @@ function renderWrappedCard(canvas, data) {
       const y = sparkTop + sparkH - ((t.accuracy - minAcc) / range) * sparkH;
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     });
-    ctx.strokeStyle = COLOURS.cyan;
+    ctx.strokeStyle = COLOURS.gold;
     ctx.lineWidth = 2.5;
     ctx.stroke();
   }
 
   // ── Footer ──
-  drawText('cincin.app', W / 2, H - 80, { size: 20, weight: '600', color: COLOURS.muted });
-  drawText('Download CinCin — the AI tasting game', W / 2, H - 50, { size: 14, color: COLOURS.border });
+  drawText('playcincin.com', W / 2, H - 80, { size: 20, weight: '600', color: COLOURS.muted });
+  drawText('play your palate', W / 2, H - 50, { size: 16, weight: '500', color: COLOURS.gold });
 }
 
 // ── Convert canvas to shareable blob ──
@@ -249,8 +252,21 @@ export default function PalateWrappedPage() {
         'July', 'August', 'September', 'October', 'November', 'December'];
       const periodLabel = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
 
-      renderWrappedCard(canvasRef.current, { ...wrapped, periodLabel });
-      setCardGenerated(true);
+      // Canvas text doesn't wait for web fonts — make sure Poppins is ready first
+      let cancelled = false;
+      const fontsReady = document.fonts
+        ? Promise.all([
+            document.fonts.load(`800 56px Poppins`),
+            document.fonts.load(`600 18px Poppins`),
+            document.fonts.load(`400 18px Poppins`),
+          ]).catch(() => {})
+        : Promise.resolve();
+      fontsReady.then(() => {
+        if (cancelled || !canvasRef.current) return;
+        renderWrappedCard(canvasRef.current, { ...wrapped, periodLabel });
+        setCardGenerated(true);
+      });
+      return () => { cancelled = true; };
     }
   }, [wrapped]);
 
@@ -314,7 +330,7 @@ export default function PalateWrappedPage() {
 
   if (isWrappedLoading) {
     return (
-      <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8 flex items-center justify-center">
+      <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8 flex items-center justify-center">
         <div className="text-center">
           <Spinner />
           <p className="text-sm text-cin-muted mt-3">Generating your Palate Wrapped...</p>
@@ -325,11 +341,11 @@ export default function PalateWrappedPage() {
 
   if (error) {
     return (
-      <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8">
+      <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
         <ScreenHeader title="Palate Wrapped" onBack={() => navigate('/palate/profile')} />
         <div className="mt-8 text-center">
           <p className="text-sm text-cin-muted">{error}</p>
-          <Button variant="secondary" className="mt-4" onClick={() => navigate('/palate/profile')}>
+          <Button variant="outline" className="mt-4" onClick={() => navigate('/palate/profile')}>
             Back to Profile
           </Button>
         </div>
@@ -343,7 +359,7 @@ export default function PalateWrappedPage() {
   const biggestMiss = wrapped.weaknesses?.[0];
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
       <ScreenHeader
         title="Palate Wrapped"
         onBack={() => navigate('/palate/profile')}
@@ -359,24 +375,24 @@ export default function PalateWrappedPage() {
       {/* ── Preview card (HTML version for on-screen display) ── */}
       <div className="mt-4">
         <Card className="cin-gradient-card p-6 text-center">
-          <div className="text-[10px] uppercase tracking-widest text-cin-cyan font-semibold mb-4">
+          <div className="text-[10px] uppercase tracking-widest text-cin-gold font-semibold mb-4">
             Palate Wrapped · {new Date().toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })}
           </div>
 
-          <div className="text-xl font-black text-cin-white mb-6">Your Palate DNA</div>
+          <div className="text-xl font-black text-cin-cream mb-6">Your Palate DNA</div>
 
           {/* Stats row */}
           <div className="flex justify-around mb-6">
             <div>
-              <div className="text-3xl font-black text-cin-cyan">{wrapped.gamesPlayed}</div>
+              <div className="text-3xl font-black text-cin-gold">{wrapped.gamesPlayed}</div>
               <div className="text-[10px] text-cin-muted">Games</div>
             </div>
             <div>
-              <div className="text-3xl font-black text-cin-cyan">{wrapped.overall?.overallAccuracy}%</div>
+              <div className="text-3xl font-black text-cin-gold">{wrapped.overall?.overallAccuracy}%</div>
               <div className="text-[10px] text-cin-muted">Accuracy</div>
             </div>
             <div>
-              <div className="text-3xl font-black text-cin-cyan">{topStrength?.category || '—'}</div>
+              <div className="text-3xl font-black text-cin-gold">{topStrength?.category || '—'}</div>
               <div className="text-[10px] text-cin-muted">Best</div>
             </div>
           </div>
@@ -409,7 +425,7 @@ export default function PalateWrappedPage() {
                   <div className="text-lg">
                     {dt.drinkType === 'WINE' ? '🍷' : dt.drinkType === 'BEER' ? '🍺' : '🥃'}
                   </div>
-                  <div className="text-sm font-bold text-cin-white">{Math.round(dt.accuracy)}%</div>
+                  <div className="text-sm font-bold text-cin-cream">{Math.round(dt.accuracy)}%</div>
                 </div>
               ))}
             </div>
@@ -426,7 +442,7 @@ export default function PalateWrappedPage() {
           {isSharing ? 'Preparing...' : 'Share as Image'}
         </Button>
 
-        <Button variant="secondary" onClick={handleCopyLink}>
+        <Button variant="outline" onClick={handleCopyLink}>
           Copy Link
         </Button>
 

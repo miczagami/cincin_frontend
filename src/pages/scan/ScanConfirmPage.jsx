@@ -54,7 +54,7 @@ export default function ScanConfirmPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-3 pb-10 animate-fade-in">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-3 pb-10 animate-fade-in">
       <ScreenHeader
         title={t('scan.bottleIdentified')}
         back={t('scan.scanAgain')}
@@ -71,7 +71,7 @@ export default function ScanConfirmPage() {
           <div className="p-4">
             <div className="flex justify-between items-start">
               <div>
-                <h2 className="text-lg font-display font-extrabold text-cin-white">
+                <h2 className="text-lg font-display font-extrabold text-cin-cream">
                   {bottle.name || bottle.productName || 'Unknown'}
                 </h2>
                 <p className="text-sm text-cin-text font-body mt-0.5">
@@ -93,14 +93,14 @@ export default function ScanConfirmPage() {
           </div>
         </Card>
 
-        <Card className="mt-3 text-center bg-cin-cyan-dim border-cin-cyan/20">
+        <Card className="mt-3 text-center bg-cin-gold-dim border-cin-gold/20">
           {isSourcing ? (
             <div className="flex items-center justify-center gap-2 py-1">
               <Spinner size="sm" />
-              <p className="text-sm text-cin-cyan">{t('scan.sourcingNotes')}</p>
+              <p className="text-sm text-cin-gold">{t('scan.sourcingNotes')}</p>
             </div>
           ) : (
-            <p className="text-sm text-cin-cyan">✓ {t('scan.notesReady', 'Tasting notes ready')}</p>
+            <p className="text-sm text-cin-gold">✓ {t('scan.notesReady', 'Tasting notes ready')}</p>
           )}
         </Card>
 
@@ -109,7 +109,7 @@ export default function ScanConfirmPage() {
             href={bottle.vivino_url || bottle.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs text-cin-muted mt-2 hover:text-cin-cyan transition-colors"
+            className="flex items-center gap-1.5 text-xs text-cin-muted mt-2 hover:text-cin-gold transition-colors"
           >
             <ExternalLink className="w-3 h-3" /> View source
           </a>
@@ -119,7 +119,7 @@ export default function ScanConfirmPage() {
           <Button onClick={handleConfirm} disabled={isSourcing}>
             {isSourcing ? t('scan.sourcingNotes') : t('scan.confirmAndSetup', 'Confirm & Setup Game')}
           </Button>
-          <Button variant="secondary" onClick={() => { reset(); navigate('/scan/search'); }}>
+          <Button variant="outline" onClick={() => { reset(); navigate('/scan/search'); }}>
             {t('scan.searchManually', 'Search Manually')}
           </Button>
         </div>

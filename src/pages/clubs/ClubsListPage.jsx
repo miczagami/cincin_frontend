@@ -50,19 +50,19 @@ export default function ClubsListPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-24">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-24">
       <ScreenHeader title="Cellar Clubs" subtitle="Your leagues & seasons" />
 
       <div className="flex gap-2 mt-4 mb-6">
         {canCreateOrJoin ? (
           <>
             <Button variant="primary" className="flex-1" onClick={() => navigate('/clubs/create')}>+ Create Club</Button>
-            <Button variant="secondary" className="flex-1" onClick={() => setShowJoin(!showJoin)}>Join Club</Button>
+            <Button variant="outline" className="flex-1" onClick={() => setShowJoin(!showJoin)}>Join Club</Button>
           </>
         ) : (
           <Card className="w-full text-center py-4">
             <p className="text-sm text-cin-muted">Free accounts can join 1 club</p>
-            <button className="text-xs text-cin-cyan mt-1" onClick={() => navigate('/subscription')}>Upgrade to Pro for unlimited →</button>
+            <button className="text-xs text-cin-gold mt-1" onClick={() => navigate('/subscription')}>Upgrade to Pro for unlimited →</button>
           </Card>
         )}
       </div>
@@ -79,7 +79,7 @@ export default function ClubsListPage() {
       )}
 
       {isLoading ? (
-        <div className="space-y-3">{[1, 2].map((i) => <div key={i} className="h-20 rounded-xl bg-cin-dark animate-pulse" />)}</div>
+        <div className="space-y-3">{[1, 2].map((i) => <div key={i} className="h-20 rounded-xl bg-cin-surface animate-pulse" />)}</div>
       ) : clubs.length === 0 ? (
         <EmptyState icon="🏆" title="No clubs yet" subtitle="Create a Cellar Club and invite your mates, or join one with an invite code." />
       ) : (
@@ -88,17 +88,17 @@ export default function ClubsListPage() {
             const daysLeft = getDaysRemaining(club.currentSeason?.endDate);
             return (
               <button key={club.id} onClick={() => navigate(`/clubs/${club.id}`)} className="w-full text-left">
-                <Card className="border-l-[3px] border-l-cin-cyan">
+                <Card className="border-l-[3px] border-l-cin-gold">
                   <div className="flex justify-between items-start">
                     <div className="flex-1 min-w-0">
-                      <p className="text-base font-bold text-white truncate">{club.name}</p>
+                      <p className="text-base font-bold text-cin-cream truncate">{club.name}</p>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <span className="text-xs text-cin-muted">{club.memberCount || '?'} members</span>
                         {club.currentSeason && (<><span className="text-xs text-cin-muted">·</span><span className="text-xs text-cin-muted">{club.currentSeason.name || 'Season 1'}</span></>)}
                         {daysLeft !== null && (<><span className="text-xs text-cin-muted">·</span><span className="text-xs text-cin-muted">{daysLeft === 0 ? 'Ending today' : `${daysLeft}d left`}</span></>)}
                       </div>
                     </div>
-                    {club.myRank && <p className="text-xl font-black text-cin-cyan ml-3">{club.myRank}{ordinalSuffix(club.myRank)}</p>}
+                    {club.myRank && <p className="text-xl font-black text-cin-gold ml-3">{club.myRank}{ordinalSuffix(club.myRank)}</p>}
                   </div>
                 </Card>
               </button>

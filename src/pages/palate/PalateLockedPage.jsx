@@ -38,7 +38,7 @@ export default function PalateLockedPage() {
 
   if (!progress) {
     return (
-      <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-24 flex items-center justify-center">
+      <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-24 flex items-center justify-center">
         <Spinner />
       </div>
     );
@@ -48,18 +48,18 @@ export default function PalateLockedPage() {
   const progressPct = Math.min(1, gamesPlayed / gamesRequired) * 100;
 
   return (
-    <div className="min-h-dvh bg-cin-black pb-24">
+    <div className="min-h-dvh bg-cin-espresso pb-24">
       <div className="px-5 pt-5">
         <ScreenHeader title="Palate Profile" />
       </div>
 
       <div className="px-8 pt-10 text-center">
         {/* Lock icon */}
-        <div className="w-24 h-24 rounded-full bg-cin-cyan/15 mx-auto mb-5 flex items-center justify-center text-5xl">
+        <div className="w-24 h-24 rounded-full bg-cin-gold/15 mx-auto mb-5 flex items-center justify-center text-5xl">
           {isUnlocked ? '📊' : '🔒'}
         </div>
 
-        <h2 className="text-xl font-black text-cin-white">
+        <h2 className="text-xl font-black text-cin-cream">
           {isUnlocked ? 'Unlock Your Analytics' : 'Unlock Your Palate Profile'}
         </h2>
 
@@ -74,13 +74,13 @@ export default function PalateLockedPage() {
         <div className="mt-6">
           <div className="flex justify-between mb-1.5">
             <span className="text-xs text-cin-muted">Progress</span>
-            <span className="text-xs font-bold text-cin-cyan">
+            <span className="text-xs font-bold text-cin-gold">
               {gamesPlayed} of {gamesRequired} games
             </span>
           </div>
-          <div className="h-2 bg-cin-dark rounded-full overflow-hidden">
+          <div className="h-2 bg-cin-surface rounded-full overflow-hidden">
             <div
-              className="h-full bg-cin-cyan rounded-full transition-all duration-700"
+              className="h-full bg-cin-gold rounded-full transition-all duration-700"
               style={{ width: `${progressPct}%` }}
             />
           </div>
@@ -111,7 +111,7 @@ export default function PalateLockedPage() {
             <div key={i} className="flex gap-3 mb-3">
               <span className="text-xl">{feature.icon}</span>
               <div>
-                <p className="text-sm font-semibold text-cin-white">{feature.title}</p>
+                <p className="text-sm font-semibold text-cin-cream">{feature.title}</p>
                 <p className="text-xs text-cin-muted">{feature.desc}</p>
               </div>
             </div>

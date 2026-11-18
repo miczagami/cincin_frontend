@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { getCachedBottles, removeCachedBottle, clearBottleCache } from '../../utils/offlineGame';
 import useToast from '../../hooks/useToast';
 import { ScreenHeader, Button, Card } from '../../components/ui';
+import { drinkColors } from '../../theme/brand';
 
 export default function CachedBottlesPage() {
   const navigate = useNavigate();
@@ -85,7 +86,7 @@ export default function CachedBottlesPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-24">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-24">
       <ScreenHeader
         title={t('settings.cachedBottles', 'Cached Bottles')}
         onBack={() => navigate('/settings')}
@@ -102,7 +103,7 @@ export default function CachedBottlesPage() {
             size="sm"
             onClick={handleClearAll}
             disabled={isClearing}
-            className="text-red-400 text-xs"
+            className="text-cin-red text-xs"
           >
             {isClearing ? 'Clearing...' : 'Clear All'}
           </Button>
@@ -112,7 +113,7 @@ export default function CachedBottlesPage() {
       {/* Loading state */}
       {isLoading && (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin w-6 h-6 border-2 border-cin-cyan border-t-transparent rounded-full" />
+          <div className="animate-spin w-6 h-6 border-2 border-cin-gold border-t-transparent rounded-full" />
         </div>
       )}
 
@@ -190,17 +191,13 @@ function SwipeableBottleRow({ bottle, onDelete, formatDate, formatSize }) {
   };
 
   // Category label colour
-  const categoryColour = {
-    WINE: '#8B5CF6',
-    BEER: '#F59E0B',
-    SPIRITS: '#06B6D4',
-  }[bottle.category] || '#6B7280';
+  const categoryColour = drinkColors[bottle.category] || drinkColors.OTHER;
 
   return (
     <div className="relative overflow-hidden rounded-lg">
       {/* Delete action behind the row */}
       <div
-        className="absolute inset-y-0 right-0 flex items-center justify-center bg-red-600 transition-opacity"
+        className="absolute inset-y-0 right-0 flex items-center justify-center bg-cin-red transition-opacity"
         style={{
           width: 80,
           opacity: showDeleteBtn ? 1 : 0.5,
@@ -209,7 +206,7 @@ function SwipeableBottleRow({ bottle, onDelete, formatDate, formatSize }) {
         <button
           onClick={handleDelete}
           disabled={isDeleting}
-          className="text-white text-xs font-medium px-3 py-2"
+          className="text-cin-espresso text-xs font-semibold px-3 py-2"
         >
           {isDeleting ? '...' : 'Delete'}
         </button>
@@ -218,7 +215,7 @@ function SwipeableBottleRow({ bottle, onDelete, formatDate, formatSize }) {
       {/* Main row content */}
       <div
         ref={rowRef}
-        className="relative bg-cin-dark rounded-lg p-3 transition-transform"
+        className="relative bg-cin-surface rounded-lg p-3 transition-transform"
         style={{
           transform: `translateX(${translateX}px)`,
           transition: startXRef.current !== null ? 'none' : 'transform 0.2s ease-out',
@@ -229,7 +226,7 @@ function SwipeableBottleRow({ bottle, onDelete, formatDate, formatSize }) {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-medium truncate">
+            <p className="text-cin-cream text-sm font-medium truncate">
               {bottle.name || 'Unknown Bottle'}
             </p>
             <div className="flex items-center gap-2 mt-1">
@@ -262,7 +259,7 @@ function SwipeableBottleRow({ bottle, onDelete, formatDate, formatSize }) {
           <button
             onClick={handleDelete}
             disabled={isDeleting}
-            className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full text-cin-muted hover:text-red-400 hover:bg-red-400/10 transition-colors flex-shrink-0"
+            className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full text-cin-muted hover:text-cin-red hover:bg-red-400/10 transition-colors flex-shrink-0"
             aria-label="Remove cached bottle"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

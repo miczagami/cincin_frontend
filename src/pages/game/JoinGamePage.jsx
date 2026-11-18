@@ -73,7 +73,7 @@ export default function JoinGamePage() {
   };
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8 flex flex-col">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8 flex flex-col">
       <ScreenHeader
         title="Join Game"
         back="Home"
@@ -92,8 +92,8 @@ export default function JoinGamePage() {
               key={i}
               className={`w-12 h-16 rounded-lg flex items-center justify-center text-2xl font-black font-display
                 ${code[i]
-                  ? 'bg-cin-dark border border-cin-cyan text-cin-cyan'
-                  : 'bg-cin-dark border border-cin-border text-cin-muted'}
+                  ? 'bg-cin-surface border border-cin-gold text-cin-gold'
+                  : 'bg-cin-surface border border-cin-border text-cin-muted'}
               `}
             >
               {code[i] || '·'}

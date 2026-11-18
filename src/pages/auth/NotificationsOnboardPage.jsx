@@ -17,13 +17,13 @@ export default function NotificationsOnboardPage() {
   const [prefs, setPrefs] = useState(Object.fromEntries(CATS.map(c => [c.key, c.on])));
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-10 animate-fade-in">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-10 animate-fade-in">
       <ScreenHeader title={t('notifications.title')} subtitle={t('notifications.subtitle')} />
       <div className="mt-5 space-y-2.5">
         {CATS.map((cat) => (
           <Card key={cat.key} className="flex justify-between items-center">
             <div className="flex-1 mr-4">
-              <div className="text-sm text-cin-white font-body font-semibold">{cat.label}</div>
+              <div className="text-sm text-cin-cream font-body font-semibold">{cat.label}</div>
               <div className="text-xs text-cin-muted font-body mt-0.5">{cat.desc}</div>
             </div>
             <Toggle checked={prefs[cat.key]} onChange={(v) => setPrefs(p => ({ ...p, [cat.key]: v }))} />

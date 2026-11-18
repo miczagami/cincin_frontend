@@ -67,6 +67,19 @@ Status key:
 
 - 🟠 **Make the season share card render.** `SeasonEndPage.jsx` imports `renderSeasonCard` and `canvasToBlob` from the stub `canvasCards.js`, which returns `null`. `PalateWrappedPage.jsx` has working copies to extract. The prototype ticket decides the final design. (`cincin_frontend`; source: object-storage)
 
+## Error monitoring and logging
+
+- 🔴 **Set up Sentry.**
+  - Use the EU (Frankfurt) organisation, with projects `cincin-app` and `cincin-api`, as specified in the error-monitoring note.
+  - Set up the SDK init, source-map upload in the Sevalla build, PII scrubbing rules, and cron monitors for the 5 jobs.
+  - Whatever data-residency decision is made must be in place before the organisation is created, because the region can't be changed.
+  
+  (`cincin_frontend`, `cincin_backend`; source: error-monitoring)
+- 🔴 **Add a route `errorElement` / app error boundary.** React Router's default boundary hides render errors in production. (`cincin_frontend`; source: error-monitoring)
+- 🔴 **Stop logging player emails.** `notificationService.js:598,652` logs `Sent to ${email}`, which leaks into Sevalla logs and would leak into Sentry breadcrumbs. Log the user ID instead. (`cincin_backend`; source: error-monitoring)
+- 🟠 **Move to Node 22.** Change the backend Docker image and the Sevalla builds from Node 20 to Node 22, and set `engines` to match. Node 20 appears to be at end of life, and Sentry v11 needs Node 20.19 or later. (`cincin_backend`, `cincin_frontend`; source: error-monitoring)
+- ⚪ **Accept that service-worker errors go unmonitored at launch,** for both the Workbox worker and `firebase-messaging-sw.js`. Check on the first build whether Sevalla keeps `.git`, which automatic release naming needs. (source: error-monitoring)
+
 ## Payments
 
 - 🟠 **Pin Stripe redirect URLs to `APP_URL`.** The API passes the client-supplied `successUrl`, `cancelUrl` and `returnUrl` straight to Stripe. (`cincin_backend`; source: production-config-checklist)

@@ -99,13 +99,13 @@ Keep within quota:
 - **The Privacy Act, if it applies to CinCin:**
   - Sending personal information to an overseas service is normally a **disclosure** under APP 8. APP 8.1 requires reasonable steps (in practice, the vendor's DPA), and s 16C keeps CinCin accountable for the recipient's breaches [O1][search].
   - The "use, not disclosure" carve-out for cloud storage is narrow, and the OAIC says not to overstate it [O1][search].
-  - Whether the Act applies at all, given the small-business exemption (≤ A$3M turnover, with exceptions) [O2][search], is for the legal research ticket to settle, not this one.
+  - Whether the Act applies at all, given the small-business exemption (≤ A$3M turnover, with exceptions) [O2][search], is for the legal research to settle. `research/australian-launch-legal.md` (#11) says CinCin should act as if the Act applies. For error monitoring it asks only that PII be scrubbed before sending, and that a DPA be signed with the vendor. It does not require Australian storage.
 - **Design for minimisation, so that the question barely matters.** Events carry:
   - **only the internal user ID**: no email, name, IP, cookies, bodies or query strings;
   - plus server-side scrubbers as a backstop.
 
   The remaining personal data is pseudonymous: user ID, user agent, URL path, stack traces.
-- **Update the privacy policy:** the `/privacy` draft for `cincin_www` should name Sentry as an overseas recipient and give the country (Germany if EU). That APP 1 requires this is **unverified** here; legal should confirm.
+- **Update the privacy policy:** the `/privacy` draft for `cincin_www` should name Sentry as an overseas recipient and give the country (Germany if EU). APP 1 requires the policy to say whether information goes overseas and to which countries (`research/australian-launch-legal.md`, APP 1 row). Accept Sentry's DPA when the organisation is created.
 
 ## Setup steps
 
@@ -345,8 +345,8 @@ Slack setup (Team plan):
 
 ## Open questions
 
-1. **Must error data stay in Australia?**
-   - If the legal research says yes, self-host GlitchTip (Postgres, optional Valkey; "runs with as little as 512MB of ram" [G3]) on Sevalla in Sydney. Keep the same SDK setup with a new DSN, and accept the loss of cron check-ins and Sentry's server-side scrubbing (both unverified for GlitchTip).
+1. **Must error data stay in Australia?** The legal research (#11) does not ask for this. It is listed here only as the fallback:
+   - If a later legal review says yes, self-host GlitchTip (Postgres, optional Valkey; "runs with as little as 512MB of ram" [G3]) on Sevalla in Sydney. Keep the same SDK setup with a new DSN, and accept the loss of cron check-ins and Sentry's server-side scrubbing (both unverified for GlitchTip).
    - Decide this **before** creating the Sentry organisation, because the region cannot be changed [D1].
 2. **Who gets alerts, and is there a Slack workspace?** This decides between Developer and Team for the soft launch.
 3. **Does Sevalla's static-site build directory contain `.git`?** This affects only release naming, not source maps [D8][D9]. Check on the first build.

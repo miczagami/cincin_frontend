@@ -72,7 +72,7 @@ function PendingGameCard({ game, clubId, toast }) {
     <Card>
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-white truncate">{game.bottle?.name || 'Unknown Bottle'}</p>
+          <p className="text-sm font-bold text-cin-cream truncate">{game.bottle?.name || 'Unknown Bottle'}</p>
           <p className="text-xs text-cin-muted mt-0.5">
             Played by {game.submittedBy?.displayName || 'Unknown'} · {formatRelativeTime(game.completedAt || game.createdAt)}
           </p>
@@ -93,7 +93,7 @@ function PendingGameCard({ game, clubId, toast }) {
           Approve
         </Button>
         <Button
-          variant="secondary"
+          variant="outline"
           size="sm"
           className="flex-1 !border-cin-red/40 !text-cin-red"
           onClick={handleReject}
@@ -176,17 +176,17 @@ export default function ClubDetailPage() {
 
   if (isLoading && !activeClub) {
     return (
-      <div className="min-h-dvh bg-cin-black flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-cin-cyan border-t-transparent rounded-full" />
+      <div className="min-h-dvh bg-cin-espresso flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-cin-gold border-t-transparent rounded-full" />
       </div>
     );
   }
 
   if (!activeClub) {
     return (
-      <div className="min-h-dvh bg-cin-black px-5 pt-5">
+      <div className="min-h-dvh bg-cin-espresso px-5 pt-5">
         <p className="text-cin-muted text-center mt-12">Club not found.</p>
-        <Button variant="secondary" className="mt-4 w-full" onClick={() => navigate('/clubs')}>Back to Clubs</Button>
+        <Button variant="outline" className="mt-4 w-full" onClick={() => navigate('/clubs')}>Back to Clubs</Button>
       </div>
     );
   }
@@ -194,7 +194,7 @@ export default function ClubDetailPage() {
   const daysLeft = getDaysRemaining(currentSeason?.endDate);
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
       <ScreenHeader title={activeClub.name} onBack={() => navigate('/clubs')} />
 
       {/* Season status bar */}
@@ -202,19 +202,19 @@ export default function ClubDetailPage() {
         <Card className="mt-4 flex items-center gap-4">
           <div className="flex-1">
             <p className="text-xs text-cin-muted">Season {currentSeason.seasonNumber}</p>
-            <p className="text-sm font-semibold text-cin-white">{currentSeason.name || 'Active Season'}</p>
+            <p className="text-sm font-semibold text-cin-cream">{currentSeason.name || 'Active Season'}</p>
           </div>
           {daysLeft !== null && (
             <div className="text-right">
               <p className="text-xs text-cin-muted">Ends in</p>
-              <p className={`text-sm font-bold ${daysLeft < 7 ? 'text-cin-red' : 'text-cin-cyan'}`}>
+              <p className={`text-sm font-bold ${daysLeft < 7 ? 'text-cin-red' : 'text-cin-gold'}`}>
                 {daysLeft}d
               </p>
             </div>
           )}
           <div className="text-right">
             <p className="text-xs text-cin-muted">Members</p>
-            <p className="text-sm font-bold text-cin-white">{activeClub.memberCount || '—'}</p>
+            <p className="text-sm font-bold text-cin-cream">{activeClub.memberCount || '—'}</p>
           </div>
         </Card>
       )}
@@ -230,7 +230,7 @@ export default function ClubDetailPage() {
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`flex-1 py-2.5 text-xs font-semibold font-display uppercase tracking-wider transition-colors
-              ${activeTab === tab.key ? 'text-cin-cyan border-b-2 border-cin-cyan' : 'text-cin-muted'}`}
+              ${activeTab === tab.key ? 'text-cin-gold border-b-2 border-cin-gold' : 'text-cin-muted'}`}
           >
             {tab.label}
           </button>
@@ -247,14 +247,14 @@ export default function ClubDetailPage() {
           ) : (
             leaderboard.map((entry, i) => (
               <div key={entry.userId || i} className="flex items-center gap-3 px-3 py-2.5 bg-cin-card rounded-lg border border-cin-border">
-                <span className={`w-6 text-sm font-bold ${i === 0 ? 'text-cin-cyan' : 'text-cin-muted'}`}>{i + 1}</span>
-                <span className="flex-1 text-sm text-cin-white">{entry.displayName}</span>
+                <span className={`w-6 text-sm font-bold ${i === 0 ? 'text-cin-gold' : 'text-cin-muted'}`}>{i + 1}</span>
+                <span className="flex-1 text-sm text-cin-cream">{entry.displayName}</span>
                 {entry.rankChange !== 0 && (
                   <span className={`text-xs ${entry.rankChange > 0 ? 'text-cin-green' : 'text-cin-red'}`}>
                     {entry.rankChange > 0 ? `↑${entry.rankChange}` : `↓${Math.abs(entry.rankChange)}`}
                   </span>
                 )}
-                <span className="text-sm font-bold text-cin-white">{entry.totalScore}</span>
+                <span className="text-sm font-bold text-cin-cream">{entry.totalScore}</span>
               </div>
             ))
           )
@@ -269,7 +269,7 @@ export default function ClubDetailPage() {
               <div key={item.id || i} className="flex gap-3 py-2.5 border-b border-cin-border last:border-0">
                 <span className="text-base">{ACTIVITY_ICONS[item.type] || '📋'}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-cin-white">{item.description}</p>
+                  <p className="text-sm text-cin-cream">{item.description}</p>
                   <p className="text-[11px] text-cin-muted mt-0.5">{formatRelativeTime(item.createdAt)}</p>
                 </div>
               </div>
@@ -296,12 +296,12 @@ export default function ClubDetailPage() {
             Approve Games ({pendingGames.length})
           </Button>
         )}
-        <Button variant="secondary" className="flex-1" onClick={handleShare}>Invite</Button>
+        <Button variant="outline" className="flex-1" onClick={handleShare}>Invite</Button>
       </div>
 
       {isAdmin && currentSeason?.seasonType === 'ROLLING' && (
         <Button
-          variant="secondary"
+          variant="outline"
           fullWidth
           onClick={() => navigate(`/clubs/${clubId}/season-end`)}
           className="mt-4"
@@ -318,7 +318,7 @@ export default function ClubDetailPage() {
               Leave {activeClub.name}? Your historical scores will remain.
             </p>
             <div className="flex gap-2">
-              <Button variant="secondary" className="flex-1" onClick={() => setShowLeaveConfirm(false)}>Cancel</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowLeaveConfirm(false)}>Cancel</Button>
               <Button variant="primary" className="flex-1 !bg-cin-red" onClick={handleLeave}>Leave Club</Button>
             </div>
           </Card>

@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- Priority 6: SEO & Lighthouse meta tags -->
-    <title>CinCin — AI Tasting Game</title>
-    <meta name="description" content="Scan any bottle. Play the AI-powered blind tasting game. Track your palate. Compete with friends." />
-    <meta name="theme-color" content="#0A0A0A" />
+    <title>CinCin — play your palate</title>
+    <meta name="description" content="Turn any bottle into a multiplayer guessing game. Scan it, guess the tasting notes, and see whose palate wins the table." />
+    <meta name="theme-color" content="#241C18" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="CinCin" />
@@ -16,10 +16,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <!-- Priority 6: Preload critical font (display font used in hero/nav) -->
+    <!-- Brand font: Poppins (preloaded; the stylesheet itself is imported by global.css) -->
     <link
       rel="preload"
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
       as="style"
     />
 
@@ -33,9 +33,9 @@
       body {
         margin: 0;
         padding: 0;
-        background: #0A0A0A;
-        color: #CCCCCC;
-        font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #241C18;
+        color: #DDD2C0;
+        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         -webkit-font-smoothing: antialiased;
         min-height: 100dvh;
         overscroll-behavior: none;
@@ -50,17 +50,12 @@
         align-items: center;
         justify-content: center;
         min-height: 100dvh;
-        background: #0A0A0A;
+        background: #241C18;
       }
-      .cin-initial-loader .spinner {
-        width: 32px;
-        height: 32px;
-        border: 2px solid rgba(34,211,238,0.3);
-        border-top-color: #22D3EE;
-        border-radius: 50%;
-        animation: spin 0.7s linear infinite;
-      }
-      @keyframes spin { to { transform: rotate(360deg); } }
+      .cin-initial-loader img { width: 96px; height: auto; animation: cin-clink 1.4s ease-in-out infinite; }
+      @keyframes cin-clink { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(-4deg) scale(1.04); } }
+      @media (prefers-reduced-motion: reduce) { .cin-initial-loader img { animation: none; } }
+      .cin-skip-link { position: absolute; top: -100%; }
     </style>
   </head>
   <body>
@@ -69,16 +64,16 @@
 
     <div id="root">
       <!-- Priority 6: Visible content before JS loads (improves FCP) -->
-      <div class="cin-initial-loader" aria-label="Loading CinCin">
-        <div class="spinner"></div>
+      <div class="cin-initial-loader" role="status" aria-label="Loading CinCin">
+        <img src="/brand/cincin-mark.svg" alt="" width="96" height="48" />
       </div>
     </div>
 
     <!-- Priority 6: Noscript fallback (Lighthouse Best Practices) -->
     <noscript>
-      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0A0A0A;color:#CCCCCC;font-family:sans-serif;text-align:center;padding:24px;">
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#241C18;color:#DDD2C0;font-family:'Poppins',sans-serif;text-align:center;padding:24px;">
         <div>
-          <h1 style="color:#22D3EE;font-size:24px;margin-bottom:8px;">CinCin</h1>
+          <img src="/brand/cincin-logo.svg" alt="CinCin" width="160" style="margin-bottom:16px" />
           <p>JavaScript is required to run CinCin. Please enable JavaScript in your browser settings.</p>
         </div>
       </div>

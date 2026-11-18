@@ -53,38 +53,38 @@ export default function ScanPage() {
       <canvas ref={canvasRef} className="hidden" />
 
       {cameraError && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-cin-black/90 px-8 text-center z-10">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-cin-espresso/90 px-8 text-center z-10">
           <span className="text-4xl mb-4">📷</span>
           <p className="text-sm text-cin-text font-body leading-relaxed">{cameraError}</p>
-          <button onClick={() => navigate('/scan/search')} className="cin-btn-secondary mt-6 w-auto px-8">Use manual search instead</button>
+          <button onClick={() => navigate('/scan/search')} className="cin-btn-outline mt-6 w-auto px-8">Use manual search instead</button>
         </div>
       )}
 
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-60 h-[340px] border-2 border-cin-cyan/60 rounded-2xl relative">
+        <div className="w-60 h-[340px] border-2 border-cin-gold/60 rounded-2xl relative">
           {['top-0 left-0 border-t-[3px] border-l-[3px]', 'top-0 right-0 border-t-[3px] border-r-[3px]', 'bottom-0 left-0 border-b-[3px] border-l-[3px]', 'bottom-0 right-0 border-b-[3px] border-r-[3px]'].map((pos, i) => (
-            <div key={i} className={`absolute w-6 h-6 border-cin-cyan rounded ${pos}`} />
+            <div key={i} className={`absolute w-6 h-6 border-cin-gold rounded ${pos}`} />
           ))}
         </div>
         <p className="absolute bottom-[-40px] text-sm text-cin-text font-body whitespace-nowrap">{t('scan.pointCamera')}</p>
       </div>
 
       {isScanning && (
-        <div className="absolute inset-0 bg-cin-black/70 flex flex-col items-center justify-center z-20">
+        <div className="absolute inset-0 bg-cin-espresso/70 flex flex-col items-center justify-center z-20">
           <Spinner size={40} />
-          <p className="text-sm text-cin-cyan font-body mt-4">Identifying bottle…</p>
+          <p className="text-sm text-cin-gold font-body mt-4">Identifying bottle…</p>
         </div>
       )}
 
       <div className="absolute top-3 left-5 right-5 flex justify-between z-10">
-        <button onClick={() => { stream?.getTracks().forEach(t => t.stop()); navigate(-1); }} className="text-cin-white text-sm font-body flex items-center gap-1"><X className="w-4 h-4" /> {t('scan.close')}</button>
-        <button onClick={toggleFlash} className="text-cin-muted text-xs font-body flex items-center gap-1">{flash ? <Zap className="w-3.5 h-3.5 text-cin-cyan" /> : <ZapOff className="w-3.5 h-3.5" />} {t('scan.flash')}</button>
+        <button onClick={() => { stream?.getTracks().forEach(t => t.stop()); navigate(-1); }} className="text-cin-cream text-sm font-body flex items-center gap-1"><X className="w-4 h-4" /> {t('scan.close')}</button>
+        <button onClick={toggleFlash} className="text-cin-muted text-xs font-body flex items-center gap-1">{flash ? <Zap className="w-3.5 h-3.5 text-cin-gold" /> : <ZapOff className="w-3.5 h-3.5" />} {t('scan.flash')}</button>
       </div>
 
       <div className="absolute bottom-[100px] left-0 right-0 flex justify-center gap-3 z-10">
         {['camera', 'barcode', 'search'].map((m) => (
           <button key={m} onClick={() => m === 'search' ? navigate('/scan/search') : setMode(m)}
-            className={`px-5 py-2 rounded-full text-sm font-display font-semibold transition-all ${mode === m ? 'bg-cin-cyan text-cin-black' : 'bg-white/10 text-cin-text hover:bg-white/15'}`}>
+            className={`px-5 py-2 rounded-full text-sm font-display font-semibold transition-all ${mode === m ? 'bg-cin-gold text-cin-espresso' : 'bg-white/10 text-cin-text hover:bg-white/15'}`}>
             {t(`scan.${m}`)}
           </button>
         ))}

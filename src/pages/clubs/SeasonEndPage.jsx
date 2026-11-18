@@ -29,10 +29,10 @@ function SeasonConfigOverlay({ onConfirm, onClose }) {
   const [lengthDays, setLengthDays] = useState(90);
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-end">
-      <div className="w-full max-w-[430px] mx-auto bg-cin-dark rounded-t-2xl p-5 pb-8 border-t border-cin-border">
+    <div className="fixed inset-0 bg-cin-espresso/80 z-50 flex items-end">
+      <div className="w-full max-w-[430px] mx-auto bg-cin-surface rounded-t-2xl p-5 pb-8 border-t border-cin-border">
         <div className="w-10 h-1 bg-cin-border rounded mx-auto mb-5" />
-        <h3 className="text-cin-white font-semibold text-lg mb-4">New Season Settings</h3>
+        <h3 className="text-cin-cream font-semibold text-lg mb-4">New Season Settings</h3>
 
         <div className="space-y-2 mb-4">
           {SEASON_TYPES.map((t) => (
@@ -41,7 +41,7 @@ function SeasonConfigOverlay({ onConfirm, onClose }) {
               onClick={() => setSeasonType(t.value)}
               className={`w-full text-left p-3 rounded-lg border text-sm transition-all
                 ${seasonType === t.value
-                  ? 'bg-cin-cyan/15 border-cin-cyan text-cin-cyan'
+                  ? 'bg-cin-gold/15 border-cin-gold text-cin-gold'
                   : 'bg-cin-card border-cin-border text-cin-muted'}`}
             >
               {t.label}
@@ -59,7 +59,7 @@ function SeasonConfigOverlay({ onConfirm, onClose }) {
                   onClick={() => setLengthDays(d)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
                     ${lengthDays === d
-                      ? 'bg-cin-cyan text-cin-black'
+                      ? 'bg-cin-gold text-cin-espresso'
                       : 'bg-cin-card border border-cin-border text-cin-muted'}`}
                 >
                   {d} days
@@ -72,7 +72,7 @@ function SeasonConfigOverlay({ onConfirm, onClose }) {
         <Button onClick={() => onConfirm({ seasonType, lengthDays })}>
           Start New Season
         </Button>
-        <Button variant="secondary" onClick={onClose} className="mt-2">
+        <Button variant="outline" onClick={onClose} className="mt-2">
           Cancel
         </Button>
       </div>
@@ -192,17 +192,17 @@ export default function SeasonEndPage() {
   // Phase: confirm end
   if (phase === 'confirm') {
     return (
-      <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8">
+      <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
         {offscreenCanvas}
         <ScreenHeader title="End Season" onBack={() => navigate(`/clubs/${clubId}`)} />
         <Card className="mt-4">
-          <h3 className="text-cin-white font-semibold text-lg mb-2">End Current Season?</h3>
+          <h3 className="text-cin-cream font-semibold text-lg mb-2">End Current Season?</h3>
           <p className="text-cin-muted text-sm mb-4">
             This will finalise standings, generate awards, and notify all members.
             This action cannot be undone.
           </p>
           <div className="flex gap-3">
-            <Button variant="secondary" className="flex-1" onClick={() => navigate(`/clubs/${clubId}`)}>Cancel</Button>
+            <Button variant="outline" className="flex-1" onClick={() => navigate(`/clubs/${clubId}`)}>Cancel</Button>
             <Button variant="primary" className="flex-1" onClick={handleEndSeason} disabled={isLoading}>
               {isLoading ? 'Ending…' : 'End Season'}
             </Button>
@@ -216,19 +216,19 @@ export default function SeasonEndPage() {
   if (phase === 'celebration') {
     const lb = seasonData?.leaderboard || leaderboard;
     return (
-      <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8">
+      <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
         {offscreenCanvas}
         <ScreenHeader title="Season Complete! 🏆" />
 
         {/* Awards */}
         {seasonData?.awards?.length > 0 && (
           <Card className="mt-4">
-            <h3 className="text-cin-white font-semibold mb-3">Awards</h3>
+            <h3 className="text-cin-cream font-semibold mb-3">Awards</h3>
             {seasonData.awards.map((award, i) => (
               <div key={i} className="flex items-center gap-3 py-2 border-b border-cin-border last:border-0">
                 <span className="text-xl">{award.emoji || '🏅'}</span>
                 <div>
-                  <p className="text-sm font-semibold text-cin-white">{award.label}</p>
+                  <p className="text-sm font-semibold text-cin-cream">{award.label}</p>
                   <p className="text-xs text-cin-muted">{award.winnerName}</p>
                 </div>
               </div>
@@ -238,18 +238,18 @@ export default function SeasonEndPage() {
 
         {/* Final standings */}
         <Card className="mt-4">
-          <h3 className="text-cin-white font-semibold mb-3">Final Standings</h3>
+          <h3 className="text-cin-cream font-semibold mb-3">Final Standings</h3>
           {lb.map((e, i) => (
             <div key={e.userId || i} className="flex items-center gap-3 py-2 border-b border-cin-border last:border-0">
-              <span className={`w-6 text-sm font-bold ${i === 0 ? 'text-cin-cyan' : 'text-cin-muted'}`}>{i + 1}</span>
-              <p className="flex-1 text-cin-white text-sm">{e.displayName}</p>
-              <span className="text-cin-white font-bold">{e.totalScore}</span>
+              <span className={`w-6 text-sm font-bold ${i === 0 ? 'text-cin-gold' : 'text-cin-muted'}`}>{i + 1}</span>
+              <p className="flex-1 text-cin-cream text-sm">{e.displayName}</p>
+              <span className="text-cin-cream font-bold">{e.totalScore}</span>
             </div>
           ))}
         </Card>
 
         <Button
-          variant="secondary"
+          variant="outline"
           className="w-full mt-4"
           onClick={handleShareResults}
           disabled={isSharing}
@@ -272,25 +272,25 @@ export default function SeasonEndPage() {
 
   // Phase: decision (admin chooses next action)
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
       {offscreenCanvas}
       <ScreenHeader title="What's Next?" />
 
-      <Card className="mb-4 cursor-pointer hover:border-cin-cyan/40" onClick={() => handleNewSeason()}>
+      <Card className="mb-4 cursor-pointer hover:border-cin-gold/40" onClick={() => handleNewSeason()}>
         <div className="flex items-start gap-3">
           <span className="text-2xl">🔄</span>
           <div>
-            <h3 className="text-cin-white font-semibold">New Season (Same Settings)</h3>
+            <h3 className="text-cin-cream font-semibold">New Season (Same Settings)</h3>
             <p className="text-cin-muted text-sm mt-1">Start fresh with the same rules.</p>
           </div>
         </div>
       </Card>
 
-      <Card className="mb-4 cursor-pointer hover:border-cin-cyan/40" onClick={() => setShowModifyConfig(true)}>
+      <Card className="mb-4 cursor-pointer hover:border-cin-gold/40" onClick={() => setShowModifyConfig(true)}>
         <div className="flex items-start gap-3">
           <span className="text-2xl">⚙️</span>
           <div>
-            <h3 className="text-cin-white font-semibold">New Season (Modified)</h3>
+            <h3 className="text-cin-cream font-semibold">New Season (Modified)</h3>
             <p className="text-cin-muted text-sm mt-1">Change season type, length, or settings.</p>
           </div>
         </div>
@@ -300,7 +300,7 @@ export default function SeasonEndPage() {
         <div className="flex items-start gap-3">
           <span className="text-2xl">📦</span>
           <div>
-            <h3 className="text-cin-white font-semibold">Archive Club</h3>
+            <h3 className="text-cin-cream font-semibold">Archive Club</h3>
             <p className="text-cin-muted text-sm mt-1">No new season. Club becomes read-only.</p>
           </div>
         </div>
@@ -308,14 +308,14 @@ export default function SeasonEndPage() {
 
       {/* Archive confirm */}
       {showArchiveConfirm && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-end">
-          <div className="w-full max-w-[430px] mx-auto bg-cin-dark rounded-t-2xl p-5 pb-8 border-t border-cin-border">
-            <h3 className="text-cin-white font-semibold text-lg mb-2">Archive {activeClub?.name}?</h3>
+        <div className="fixed inset-0 bg-cin-espresso/80 z-50 flex items-end">
+          <div className="w-full max-w-[430px] mx-auto bg-cin-surface rounded-t-2xl p-5 pb-8 border-t border-cin-border">
+            <h3 className="text-cin-cream font-semibold text-lg mb-2">Archive {activeClub?.name}?</h3>
             <p className="text-cin-muted text-sm mb-4">
               The club will become read-only. Members can view history but no new games can be added.
             </p>
             <div className="flex gap-3">
-              <Button variant="secondary" className="flex-1" onClick={() => setShowArchiveConfirm(false)}>Cancel</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowArchiveConfirm(false)}>Cancel</Button>
               <Button variant="primary" className="flex-1 !bg-cin-red" onClick={handleArchive}>Archive</Button>
             </div>
           </div>

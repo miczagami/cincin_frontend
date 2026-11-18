@@ -35,10 +35,10 @@ const COLORS = {
     text: 'text-cin-red',
   },
   info: {
-    bg: 'bg-cin-cyan/15',
-    border: 'border-cin-cyan/30',
-    icon: 'text-cin-cyan',
-    text: 'text-cin-cyan',
+    bg: 'bg-cin-gold/15',
+    border: 'border-cin-gold/30',
+    icon: 'text-cin-gold',
+    text: 'text-cin-gold',
   },
   warning: {
     bg: 'bg-cin-orange/15',
@@ -73,7 +73,7 @@ function Toast({ toast, onDismiss }) {
       </p>
       <button
         onClick={() => onDismiss(id)}
-        className="flex-shrink-0 mt-0.5 text-cin-muted hover:text-cin-white transition-colors"
+        className="flex-shrink-0 mt-0.5 text-cin-muted hover:text-cin-cream transition-colors"
         aria-label="Dismiss"
       >
         <X className="w-4 h-4" />

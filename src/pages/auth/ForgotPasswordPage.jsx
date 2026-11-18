@@ -114,12 +114,12 @@ export default function ForgotPasswordPage() {
   // ── Step 1 UI: Request ──
   if (step === STEPS.REQUEST) {
     return (
-      <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-10 animate-fade-in">
+      <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-10 animate-fade-in">
         <ScreenHeader title="Reset Password" subtitle="Enter your email and we'll send you a reset link." />
 
         <div className="mt-8 flex justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-cin-cyan/10 border border-cin-cyan/20 flex items-center justify-center">
-            <Mail className="w-8 h-8 text-cin-cyan" />
+          <div className="w-16 h-16 rounded-2xl bg-cin-gold/10 border border-cin-gold/20 flex items-center justify-center">
+            <Mail className="w-8 h-8 text-cin-gold" />
           </div>
         </div>
 
@@ -142,7 +142,7 @@ export default function ForgotPasswordPage() {
 
           <button
             onClick={() => navigate('/auth/login')}
-            className="cin-btn-ghost w-full flex items-center justify-center gap-2 text-cin-cyan"
+            className="cin-btn-ghost w-full flex items-center justify-center gap-2 text-cin-gold"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Sign In
@@ -155,15 +155,15 @@ export default function ForgotPasswordPage() {
   // ── Step 2 UI: Enter token + new password ──
   if (step === STEPS.RESET) {
     return (
-      <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-10 animate-fade-in">
+      <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-10 animate-fade-in">
         <ScreenHeader
           title="New Password"
           subtitle="Check your email for the reset token, then enter your new password."
         />
 
         <div className="mt-8 flex justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-cin-cyan/10 border border-cin-cyan/20 flex items-center justify-center">
-            <KeyRound className="w-8 h-8 text-cin-cyan" />
+          <div className="w-16 h-16 rounded-2xl bg-cin-gold/10 border border-cin-gold/20 flex items-center justify-center">
+            <KeyRound className="w-8 h-8 text-cin-gold" />
           </div>
         </div>
 
@@ -189,7 +189,7 @@ export default function ForgotPasswordPage() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-[34px] text-cin-muted hover:text-cin-white transition-colors"
+              className="absolute right-3 top-[34px] text-cin-muted hover:text-cin-cream transition-colors"
               aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -228,12 +228,12 @@ export default function ForgotPasswordPage() {
 
   // ── Step 3 UI: Success ──
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-10 animate-fade-in flex flex-col items-center justify-center text-center">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-10 animate-fade-in flex flex-col items-center justify-center text-center">
       <div className="w-20 h-20 rounded-full bg-cin-green/15 border border-cin-green/30 flex items-center justify-center mb-6">
         <ShieldCheck className="w-10 h-10 text-cin-green" />
       </div>
 
-      <h1 className="text-2xl font-display font-extrabold text-cin-white mb-2">
+      <h1 className="text-2xl font-display font-extrabold text-cin-cream mb-2">
         Password Reset!
       </h1>
       <p className="text-sm text-cin-muted font-body mb-8 max-w-[280px] leading-relaxed">

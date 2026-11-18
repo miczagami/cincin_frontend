@@ -39,12 +39,12 @@ export default function ClubCreatePage() {
 
   if (!user?.emailVerified) {
     return (
-      <div className="min-h-dvh bg-cin-black px-5 pt-5">
+      <div className="min-h-dvh bg-cin-espresso px-5 pt-5">
         <ScreenHeader title="Create Club" onBack={() => navigate('/clubs')} />
         <Card className="mt-8">
-          <p className="text-cin-white text-center mb-4">Verify your email to create a Cellar Club.</p>
+          <p className="text-cin-cream text-center mb-4">Verify your email to create a Cellar Club.</p>
           <p className="text-cin-muted text-sm text-center mb-4">Check your inbox for a verification link.</p>
-          <Button variant="secondary" onClick={() => navigate('/settings')}>Go to Settings</Button>
+          <Button variant="outline" onClick={() => navigate('/settings')}>Go to Settings</Button>
         </Card>
       </div>
     );
@@ -72,7 +72,7 @@ export default function ClubCreatePage() {
   };
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
       <ScreenHeader title="Create Club" onBack={() => navigate('/clubs')} />
 
       {/* Club Name */}
@@ -109,10 +109,10 @@ export default function ClubCreatePage() {
               onClick={() => setSeasonType(type.value)}
               className={`w-full text-left p-3 rounded-lg border transition-all
                 ${seasonType === type.value
-                  ? 'bg-cin-cyan/15 border-cin-cyan'
-                  : 'bg-cin-dark border-cin-border'}`}
+                  ? 'bg-cin-gold/15 border-cin-gold'
+                  : 'bg-cin-surface border-cin-border'}`}
             >
-              <span className={`text-sm font-semibold ${seasonType === type.value ? 'text-cin-cyan' : 'text-cin-white'}`}>
+              <span className={`text-sm font-semibold ${seasonType === type.value ? 'text-cin-gold' : 'text-cin-cream'}`}>
                 {type.label}
               </span>
               <p className="text-[11px] text-cin-muted mt-0.5">{type.desc}</p>
@@ -144,8 +144,8 @@ export default function ClubCreatePage() {
                   onClick={() => setLengthDays(preset.value)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
                     ${lengthDays === preset.value
-                      ? 'bg-cin-cyan/15 border border-cin-cyan text-cin-cyan'
-                      : 'bg-cin-dark border border-cin-border text-cin-muted'}`}
+                      ? 'bg-cin-gold/15 border border-cin-gold text-cin-gold'
+                      : 'bg-cin-surface border border-cin-border text-cin-muted'}`}
                 >
                   {preset.label}
                 </button>

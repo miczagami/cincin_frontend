@@ -19,6 +19,7 @@ import { useNavigate } from 'react-router-dom';
 import useCommerceStore from '../../context/commerceStore';
 import useSubscriptionStore from '../../context/subscriptionStore';
 import { ScreenHeader, Button, Card, Pill, Spinner } from '../../components/ui';
+import { colors, alpha } from '../../theme/brand';
 
 export default function DiscoveryPage() {
   const navigate = useNavigate();
@@ -45,7 +46,7 @@ export default function DiscoveryPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
       <ScreenHeader
         title="Discover"
         subtitle="Trending bottles & sponsored tastings"
@@ -73,7 +74,7 @@ export default function DiscoveryPage() {
               }`}
               style={
                 isSponsored
-                  ? { background: 'linear-gradient(135deg, #1A1A1A 0%, rgba(251,146,60,0.08) 100%)' }
+                  ? { background: `linear-gradient(135deg, ${colors.card} 0%, ${alpha(colors.orange, 0.1)} 100%)` }
                   : undefined
               }
               onClick={() => handleItemClick(item)}
@@ -89,7 +90,7 @@ export default function DiscoveryPage() {
               )}
 
               {/* Content */}
-              <p className="text-sm font-semibold text-cin-white">{item.title || item.name}</p>
+              <p className="text-sm font-semibold text-cin-cream">{item.title || item.name}</p>
               {item.description && (
                 <p className="text-xs text-cin-text mt-1 leading-relaxed">{item.description}</p>
               )}
@@ -97,7 +98,7 @@ export default function DiscoveryPage() {
                 <p className="text-xs text-cin-muted mt-1">{item.category}</p>
               )}
               {item.trendLabel && (
-                <p className="text-[11px] text-cin-cyan mt-1">{item.trendLabel}</p>
+                <p className="text-[11px] text-cin-gold mt-1">{item.trendLabel}</p>
               )}
 
               {/* Sponsored CTA */}
@@ -111,7 +112,7 @@ export default function DiscoveryPage() {
         {/* Load more */}
         {feedHasMore && (
           <div className="text-center py-4">
-            <Button variant="secondary" onClick={handleLoadMore} disabled={isFeedLoading}>
+            <Button variant="outline" onClick={handleLoadMore} disabled={isFeedLoading}>
               {isFeedLoading ? 'Loading...' : 'Load More'}
             </Button>
           </div>

@@ -19,13 +19,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'brand/*.svg'],
       manifest: {
-        name: 'CinCin — AI Tasting Game',
+        name: 'CinCin — play your palate',
         short_name: 'CinCin',
-        description: 'Scan. Taste. Compete. The AI-powered blind tasting game.',
-        theme_color: '#0A0A0A',
-        background_color: '#0A0A0A',
+        description: 'Turn any bottle into a multiplayer guessing game.',
+        theme_color: '#241C18',
+        background_color: '#241C18',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
@@ -33,7 +33,7 @@ export default defineConfig({
         icons: [
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {

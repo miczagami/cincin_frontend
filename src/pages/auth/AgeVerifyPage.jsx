@@ -44,13 +44,13 @@ export default function AgeVerifyPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-10 flex flex-col animate-fade-in">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-10 flex flex-col animate-fade-in">
       <ScreenHeader title={t('ageVerify.title')} subtitle={t('ageVerify.subtitle')} />
       <div className="flex-1 flex flex-col items-center justify-center gap-6 mt-6">
         <div className={`w-28 h-28 rounded-full flex items-center justify-center transition-all duration-500 ${
-          step === 'success' ? 'bg-cin-green/15' : step === 'failed' ? 'bg-cin-red/15' : step === 'verifying' ? 'bg-cin-cyan-dim animate-pulse' : 'bg-cin-cyan-dim'
+          step === 'success' ? 'bg-cin-green/15' : step === 'failed' ? 'bg-cin-red/15' : step === 'verifying' ? 'bg-cin-gold-dim animate-pulse' : 'bg-cin-gold-dim'
         }`}>
-          {step === 'verifying' ? <Loader2 className="w-12 h-12 text-cin-cyan animate-spin" />
+          {step === 'verifying' ? <Loader2 className="w-12 h-12 text-cin-gold animate-spin" />
             : step === 'success' ? <ShieldCheck className="w-12 h-12 text-cin-green" />
             : <span className="text-5xl">🪪</span>}
         </div>
@@ -60,7 +60,7 @@ export default function AgeVerifyPage() {
             <p className="text-xs text-cin-muted font-body mt-2 leading-relaxed">{t('ageVerify.privacyNote')}</p>
           </div>
         )}
-        {step === 'verifying' && <p className="text-sm text-cin-cyan font-body">{t('ageVerify.verifying')}</p>}
+        {step === 'verifying' && <p className="text-sm text-cin-gold font-body">{t('ageVerify.verifying')}</p>}
         {step === 'success' && <p className="text-sm text-cin-green font-display font-bold">{t('ageVerify.verified')}</p>}
         {step === 'failed' && (
           <div className="text-center">
@@ -70,7 +70,7 @@ export default function AgeVerifyPage() {
         )}
         <Card className="w-full flex justify-between items-center">
           <span className="text-sm text-cin-text">{t('ageVerify.yourRegion')}</span>
-          <span className="text-sm text-cin-white font-display font-bold">{region.name} ({region.age}+)</span>
+          <span className="text-sm text-cin-cream font-display font-bold">{region.name} ({region.age}+)</span>
         </Card>
       </div>
       <div className="mt-6 space-y-2">

@@ -104,7 +104,7 @@ export default function SubscriptionPage() {
 
   if (isLoading && !status) {
     return (
-      <div className="min-h-dvh bg-cin-black flex items-center justify-center">
+      <div className="min-h-dvh bg-cin-espresso flex items-center justify-center">
         <Spinner />
       </div>
     );
@@ -115,17 +115,17 @@ export default function SubscriptionPage() {
   const isOnTrial = isTrialing?.();
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
       <ScreenHeader title="Subscription" onBack={() => navigate('/profile')} />
 
       {/* Active subscription state */}
       {isActivePro && (
         <>
-          <Card className="mt-4 bg-cin-cyan/10 border-cin-cyan/30">
+          <Card className="mt-4 bg-cin-gold/10 border-cin-gold/30">
             <div className="flex items-center gap-3">
               <span className="text-2xl">👑</span>
               <div className="flex-1">
-                <p className="text-sm font-bold text-cin-white">
+                <p className="text-sm font-bold text-cin-cream">
                   {isOnTrial ? 'Pro Trial' : 'Pro'} — Active
                 </p>
                 <p className="text-xs text-cin-muted">
@@ -134,17 +134,17 @@ export default function SubscriptionPage() {
                     : `Renews ${new Date(status?.periodEnd).toLocaleDateString()}`}
                 </p>
               </div>
-              <Pill color="cyan">PRO</Pill>
+              <Pill color="gold">PRO</Pill>
             </div>
           </Card>
 
           <div className="mt-4 space-y-2">
-            <Button variant="secondary" fullWidth onClick={handleBillingPortal}>
+            <Button variant="outline" fullWidth onClick={handleBillingPortal}>
               Manage Billing
             </Button>
 
             {isCancellingState ? (
-              <Button variant="secondary" fullWidth onClick={handleReactivate} loading={isLoading}>
+              <Button variant="outline" fullWidth onClick={handleReactivate} loading={isLoading}>
                 Reactivate Subscription
               </Button>
             ) : (
@@ -154,7 +154,7 @@ export default function SubscriptionPage() {
                     Cancel Pro? Your subscription will remain active until the end of the current billing period.
                   </p>
                   <div className="flex gap-2">
-                    <Button variant="secondary" className="flex-1" onClick={() => setShowCancelConfirm(false)}>
+                    <Button variant="outline" className="flex-1" onClick={() => setShowCancelConfirm(false)}>
                       Keep Pro
                     </Button>
                     <Button
@@ -184,7 +184,7 @@ export default function SubscriptionPage() {
       {!isActivePro && (
         <>
           <div className="mt-5 text-center">
-            <h2 className="text-2xl font-display font-extrabold text-cin-white">Go Pro</h2>
+            <h2 className="text-2xl font-display font-extrabold text-cin-cream">Go Pro</h2>
             <p className="text-sm text-cin-muted mt-1">Unlock the full CinCin experience</p>
           </div>
 
@@ -199,10 +199,10 @@ export default function SubscriptionPage() {
                 onClick={() => setSelectedPlan(plan.value)}
                 className={`flex-1 py-3 rounded-xl border text-center transition-all
                   ${selectedPlan === plan.value
-                    ? 'bg-cin-cyan/15 border-cin-cyan'
+                    ? 'bg-cin-gold/15 border-cin-gold'
                     : 'bg-cin-card border-cin-border'}`}
               >
-                <p className={`text-sm font-bold ${selectedPlan === plan.value ? 'text-cin-cyan' : 'text-cin-white'}`}>
+                <p className={`text-sm font-bold ${selectedPlan === plan.value ? 'text-cin-gold' : 'text-cin-cream'}`}>
                   {plan.label}
                 </p>
                 <p className="text-xs text-cin-muted">{plan.price}</p>
@@ -219,8 +219,8 @@ export default function SubscriptionPage() {
             <div className="space-y-2">
               {PRO_FEATURES.map((feature) => (
                 <div key={feature} className="flex items-center gap-2">
-                  <span className="text-cin-cyan text-sm">✓</span>
-                  <span className="text-sm text-cin-white">{feature}</span>
+                  <span className="text-cin-gold text-sm">✓</span>
+                  <span className="text-sm text-cin-cream">{feature}</span>
                 </div>
               ))}
             </div>
@@ -247,7 +247,7 @@ export default function SubscriptionPage() {
           {!user?.emailVerified && (
             <p className="text-[11px] text-cin-orange text-center mt-3">
               ⚠️ Email verification required before subscribing.{' '}
-              <button className="underline text-cin-cyan" onClick={() => navigate('/settings')}>
+              <button className="underline text-cin-gold" onClick={() => navigate('/settings')}>
                 Verify now →
               </button>
             </p>

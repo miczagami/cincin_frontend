@@ -44,7 +44,7 @@ export default function BuyPage() {
 
   if (isBuyLoading && !buyTab) {
     return (
-      <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-24 flex items-center justify-center">
+      <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-24 flex items-center justify-center">
         <Spinner />
       </div>
     );
@@ -53,7 +53,7 @@ export default function BuyPage() {
   const bottles = buyTab?.bottles || [];
 
   return (
-    <div className="min-h-dvh bg-cin-black pb-24">
+    <div className="min-h-dvh bg-cin-espresso pb-24">
       <div className="px-5 pt-5">
         <ScreenHeader title="Buy" subtitle="Bottles you've scanned" />
       </div>
@@ -73,7 +73,7 @@ export default function BuyPage() {
             title="No bottles yet"
             subtitle="Scan a bottle to see purchase links from our partner retailers."
             action={
-              <Button variant="secondary" onClick={() => navigate('/scan')}>
+              <Button variant="outline" onClick={() => navigate('/scan')}>
                 Scan a Bottle
               </Button>
             }
@@ -83,13 +83,13 @@ export default function BuyPage() {
             {bottles.map((bottle) => (
               <Card key={bottle.id} className="flex items-center gap-3 p-3">
                 {/* Bottle icon */}
-                <div className="w-12 h-16 rounded-md bg-cin-dark flex items-center justify-center text-2xl flex-shrink-0">
+                <div className="w-12 h-16 rounded-md bg-cin-surface flex items-center justify-center text-2xl flex-shrink-0">
                   {getDrinkEmoji(bottle.category)}
                 </div>
 
                 {/* Bottle details */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-cin-white truncate">{bottle.name}</p>
+                  <p className="text-sm font-semibold text-cin-cream truncate">{bottle.name}</p>
                   <p className="text-xs text-cin-muted mt-0.5">
                     {bottle.category}{bottle.subcategory ? ` · ${bottle.subcategory}` : ''}
                   </p>
@@ -103,7 +103,7 @@ export default function BuyPage() {
                 {/* Price + Buy button */}
                 <div className="flex-shrink-0 text-right">
                   {bottle.price && (
-                    <p className="text-sm font-bold text-cin-white">{bottle.price}</p>
+                    <p className="text-sm font-bold text-cin-cream">{bottle.price}</p>
                   )}
                   {bottle.affiliateUrl ? (
                     <button
@@ -112,7 +112,7 @@ export default function BuyPage() {
                         affiliatePartner: bottle.affiliatePartner,
                         source: 'buy_tab',
                       })}
-                      className="mt-1 px-3 py-1 rounded-md bg-cin-cyan text-cin-black text-[11px] font-bold"
+                      className="mt-1 px-3 py-1 rounded-md bg-cin-gold text-cin-espresso text-[11px] font-bold"
                     >
                       Buy
                     </button>

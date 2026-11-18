@@ -83,17 +83,17 @@ export default function GameResultsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-dvh bg-cin-black flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-cin-cyan border-t-transparent rounded-full" />
+      <div className="min-h-dvh bg-cin-espresso flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-cin-gold border-t-transparent rounded-full" />
       </div>
     );
   }
 
   if (!results) {
     return (
-      <div className="min-h-dvh bg-cin-black px-5 pt-5">
+      <div className="min-h-dvh bg-cin-espresso px-5 pt-5">
         <p className="text-cin-muted text-center mt-12">Results not available.</p>
-        <Button variant="secondary" className="mt-4 w-full" onClick={() => navigate('/')}>Home</Button>
+        <Button variant="outline" className="mt-4 w-full" onClick={() => navigate('/')}>Home</Button>
       </div>
     );
   }
@@ -101,15 +101,15 @@ export default function GameResultsPage() {
   const winner = results.leaderboard?.[0];
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
       <ScreenHeader title="Game Results" />
 
       {/* Winner banner */}
       {winner && (
-        <Card className="mt-4 text-center bg-cin-cyan/10 border-cin-cyan/30">
+        <Card className="mt-4 text-center bg-cin-gold/10 border-cin-gold/30">
           <p className="text-3xl mb-2">🏆</p>
-          <h2 className="text-xl font-display font-extrabold text-cin-white">{winner.displayName}</h2>
-          <p className="text-cin-cyan font-semibold">{winner.score} points</p>
+          <h2 className="text-xl font-display font-extrabold text-cin-cream">{winner.displayName}</h2>
+          <p className="text-cin-gold font-semibold">{winner.score} points</p>
           {bottle && <p className="text-xs text-cin-muted mt-1">{bottle.name}</p>}
         </Card>
       )}
@@ -121,7 +121,7 @@ export default function GameResultsPage() {
             key={tab}
             onClick={() => setActiveTab(i)}
             className={`flex-1 py-2.5 text-xs font-semibold font-display uppercase tracking-wider transition-colors
-              ${activeTab === i ? 'text-cin-cyan border-b-2 border-cin-cyan' : 'text-cin-muted'}`}
+              ${activeTab === i ? 'text-cin-gold border-b-2 border-cin-gold' : 'text-cin-muted'}`}
           >
             {tab}
           </button>
@@ -134,11 +134,11 @@ export default function GameResultsPage() {
           <div className="space-y-2">
             {results.leaderboard?.map((player, i) => (
               <div key={player.userId || i} className="flex items-center gap-3 px-3 py-2.5 bg-cin-card rounded-lg border border-cin-border">
-                <span className={`w-6 text-sm font-bold ${i === 0 ? 'text-cin-cyan' : 'text-cin-muted'}`}>
+                <span className={`w-6 text-sm font-bold ${i === 0 ? 'text-cin-gold' : 'text-cin-muted'}`}>
                   {i + 1}
                 </span>
-                <span className="flex-1 text-sm text-cin-white font-body">{player.displayName}</span>
-                <span className="text-sm font-bold text-cin-white">{player.score}</span>
+                <span className="flex-1 text-sm text-cin-cream font-body">{player.displayName}</span>
+                <span className="text-sm font-bold text-cin-cream">{player.score}</span>
               </div>
             ))}
           </div>
@@ -152,7 +152,7 @@ export default function GameResultsPage() {
                 <span className={`text-xs font-semibold mt-0.5 ${note.correct ? 'text-cin-green' : 'text-cin-red'}`}>
                   {note.correct ? '✓' : '✗'}
                 </span>
-                <span className="text-sm text-cin-white font-body flex-1">{note.note}</span>
+                <span className="text-sm text-cin-cream font-body flex-1">{note.note}</span>
                 {note.category && <Pill color="muted" className="text-[10px]">{note.category}</Pill>}
               </div>
             )) || (
@@ -166,11 +166,11 @@ export default function GameResultsPage() {
           <div className="space-y-3">
             {results.playerBreakdowns?.map((player) => (
               <Card key={player.userId}>
-                <p className="text-sm font-semibold text-cin-white mb-2">{player.displayName}</p>
+                <p className="text-sm font-semibold text-cin-cream mb-2">{player.displayName}</p>
                 <div className="flex gap-4 text-xs text-cin-muted">
                   <span>Correct: <span className="text-cin-green font-bold">{player.correct}</span></span>
                   <span>Wrong: <span className="text-cin-red font-bold">{player.wrong}</span></span>
-                  <span>Precision: <span className="text-cin-cyan font-bold">{player.precisionBonus}</span></span>
+                  <span>Precision: <span className="text-cin-gold font-bold">{player.precisionBonus}</span></span>
                 </div>
               </Card>
             )) || (
@@ -189,7 +189,7 @@ export default function GameResultsPage() {
               <button
                 key={club.id}
                 onClick={() => handleTagToClub(club.id)}
-                className="w-full text-left text-xs px-3 py-2 bg-cin-dark rounded-lg border border-cin-border text-cin-text hover:border-cin-cyan/40 transition-colors"
+                className="w-full text-left text-xs px-3 py-2 bg-cin-surface rounded-lg border border-cin-border text-cin-text hover:border-cin-gold/40 transition-colors"
               >
                 {club.name}
               </button>
@@ -201,15 +201,15 @@ export default function GameResultsPage() {
       {/* Actions */}
       <div className="mt-6 space-y-3">
         <div className="flex gap-3">
-          <Button variant="secondary" className="flex-1" onClick={handleShare}>
+          <Button variant="outline" className="flex-1" onClick={handleShare}>
             Share
           </Button>
-          <Button variant="secondary" className="flex-1" onClick={handleCopyLink}>
+          <Button variant="outline" className="flex-1" onClick={handleCopyLink}>
             Copy Link
           </Button>
         </div>
         <Button onClick={handlePlayAgain}>Play Again</Button>
-        <Button variant="secondary" onClick={() => navigate('/')}>Home</Button>
+        <Button variant="outline" onClick={() => navigate('/')}>Home</Button>
       </div>
     </div>
   );

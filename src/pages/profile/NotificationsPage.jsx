@@ -100,7 +100,7 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-8">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
       <ScreenHeader title="Notifications" onBack={() => navigate('/')} />
 
       {/* Mark all read */}
@@ -108,7 +108,7 @@ export default function NotificationsPage() {
         <div className="flex justify-end mt-2">
           <button
             onClick={handleMarkAllRead}
-            className="text-xs text-cin-cyan font-semibold"
+            className="text-xs text-cin-gold font-semibold"
           >
             Mark all as read ({unreadCount})
           </button>
@@ -134,13 +134,13 @@ export default function NotificationsPage() {
               }`}
             >
               {isUnread ? (
-                <div className="w-2 h-2 rounded-full bg-cin-cyan mt-1.5 flex-shrink-0" />
+                <div className="w-2 h-2 rounded-full bg-cin-gold mt-1.5 flex-shrink-0" />
               ) : (
                 <div className="w-2 flex-shrink-0" />
               )}
               <span className="text-lg flex-shrink-0 mt-0.5">{getIcon(notif.type)}</span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-cin-white">{notif.title}</p>
+                <p className="text-sm font-semibold text-cin-cream">{notif.title}</p>
                 <p className="text-xs text-cin-text mt-0.5 line-clamp-2">{notif.body}</p>
                 <p className="text-[11px] text-cin-muted mt-1">{getRelativeTime(notif.createdAt)}</p>
               </div>
@@ -154,7 +154,7 @@ export default function NotificationsPage() {
 
         {!isLoading && hasMore && items.length > 0 && (
           <div className="text-center py-4">
-            <Button variant="secondary" onClick={handleLoadMore}>Load More</Button>
+            <Button variant="outline" onClick={handleLoadMore}>Load More</Button>
           </div>
         )}
 

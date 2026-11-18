@@ -54,8 +54,8 @@ messaging.onBackgroundMessage((payload) => {
 
   const options = {
     body,
-    icon: "/icons/icon-192x192.png",
-    badge: "/icons/badge-72x72.png",
+    icon: "/icon-192.png",
+    badge: "/badge-72.png",
     vibrate: [100, 50, 100],
     tag: data.type || "general", // Collapse same-type notifications
     renotify: true,
@@ -152,12 +152,12 @@ function getActions(type) {
   switch (type) {
     case "game_invite":
       return [
-        { action: "join", title: "Join Game", icon: "/icons/action-join.png" },
+        { action: "join", title: "Join Game" },
         { action: "dismiss", title: "Later" },
       ];
     case "club_approval":
       return [
-        { action: "approve", title: "Review", icon: "/icons/action-approve.png" },
+        { action: "approve", title: "Review" },
       ];
     default:
       return [];

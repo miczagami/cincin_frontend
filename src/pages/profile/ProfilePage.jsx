@@ -79,7 +79,7 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-24 flex items-center justify-center">
+      <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-24 flex items-center justify-center">
         <Spinner />
       </div>
     );
@@ -90,14 +90,14 @@ export default function ProfilePage() {
   const initial = (p.displayName || 'U').charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-dvh bg-cin-black pb-24">
+    <div className="min-h-dvh bg-cin-espresso pb-24">
       <div className="px-5 pt-5">
         <ScreenHeader title="Profile" />
       </div>
 
       {/* Avatar + Name */}
       <div className="px-5 text-center">
-        <div className="w-20 h-20 rounded-full bg-cin-cyan mx-auto mb-3 flex items-center justify-center text-3xl font-black text-cin-black">
+        <div className="w-20 h-20 rounded-full bg-cin-gold mx-auto mb-3 flex items-center justify-center text-3xl font-black text-cin-espresso">
           {p.avatarUrl ? (
             <img src={p.avatarUrl} alt="" className="w-full h-full rounded-full object-cover" />
           ) : initial}
@@ -124,20 +124,20 @@ export default function ProfilePage() {
               placeholder="e.g. Sydney, Australia"
             />
             <div className="flex gap-2 mt-3">
-              <Button variant="secondary" className="flex-1" onClick={handleCancelEdit}>Cancel</Button>
+              <Button variant="outline" className="flex-1" onClick={handleCancelEdit}>Cancel</Button>
               <Button className="flex-1" onClick={handleSave} loading={isSaving}>Save</Button>
             </div>
           </div>
         ) : (
           <>
-            <h2 className="text-xl font-display font-extrabold text-cin-white">{p.displayName}</h2>
+            <h2 className="text-xl font-display font-extrabold text-cin-cream">{p.displayName}</h2>
             {p.bio && <p className="text-sm text-cin-muted mt-1">{p.bio}</p>}
             {p.location && <p className="text-xs text-cin-muted mt-0.5">📍 {p.location}</p>}
             <div className="flex items-center justify-center gap-2 mt-2">
-              {isPro?.() && <Pill color="cyan">PRO</Pill>}
+              {isPro?.() && <Pill color="gold">PRO</Pill>}
               {p.emailVerified && <Pill color="green">Verified</Pill>}
             </div>
-            <button onClick={() => setIsEditing(true)} className="mt-3 text-xs text-cin-cyan font-semibold">
+            <button onClick={() => setIsEditing(true)} className="mt-3 text-xs text-cin-gold font-semibold">
               Edit Profile
             </button>
           </>
@@ -154,7 +154,7 @@ export default function ProfilePage() {
               { label: 'Clubs', value: stats.clubsJoined ?? 0 },
             ].map((stat) => (
               <Card key={stat.label} className="text-center py-3">
-                <p className="text-xl font-display font-extrabold text-cin-white">{stat.value}</p>
+                <p className="text-xl font-display font-extrabold text-cin-cream">{stat.value}</p>
                 <p className="text-[11px] text-cin-muted mt-0.5">{stat.label}</p>
               </Card>
             ))}
@@ -166,24 +166,24 @@ export default function ProfilePage() {
       {!isEditing && (
         <div className="px-5 mt-5 space-y-2">
           <Card
-            className="flex items-center gap-3 cursor-pointer hover:border-cin-cyan/30 transition-colors"
+            className="flex items-center gap-3 cursor-pointer hover:border-cin-gold/30 transition-colors"
             onClick={() => navigate(isPro?.() ? '/palate/profile' : '/palate')}
           >
             <span className="text-xl">🧬</span>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-cin-white">Palate Profile</p>
+              <p className="text-sm font-semibold text-cin-cream">Palate Profile</p>
               <p className="text-xs text-cin-muted">Your tasting DNA & analytics</p>
             </div>
             <span className="text-cin-muted text-xs">›</span>
           </Card>
 
           <Card
-            className="flex items-center gap-3 cursor-pointer hover:border-cin-cyan/30 transition-colors"
+            className="flex items-center gap-3 cursor-pointer hover:border-cin-gold/30 transition-colors"
             onClick={() => navigate('/subscription')}
           >
             <span className="text-xl">👑</span>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-cin-white">Subscription</p>
+              <p className="text-sm font-semibold text-cin-cream">Subscription</p>
               <p className="text-xs text-cin-muted">
                 {isPro?.() ? `Pro · ${status?.plan || 'monthly'}` : 'Free — upgrade to Pro'}
               </p>
@@ -192,12 +192,12 @@ export default function ProfilePage() {
           </Card>
 
           <Card
-            className="flex items-center gap-3 cursor-pointer hover:border-cin-cyan/30 transition-colors"
+            className="flex items-center gap-3 cursor-pointer hover:border-cin-gold/30 transition-colors"
             onClick={() => navigate('/settings')}
           >
             <span className="text-xl">⚙️</span>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-cin-white">Settings</p>
+              <p className="text-sm font-semibold text-cin-cream">Settings</p>
               <p className="text-xs text-cin-muted">Account, notifications, data</p>
             </div>
             <span className="text-cin-muted text-xs">›</span>

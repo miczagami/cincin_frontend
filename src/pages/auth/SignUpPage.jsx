@@ -14,6 +14,7 @@ import { Apple, Chrome } from 'lucide-react';
 import { Button, Input, ScreenHeader, Divider } from '../../components/ui';
 import useAuthStore from '../../context/authStore';
 import useToast from '../../hooks/useToast';
+import Logo from '../../components/brand/Logo';
 
 export default function SignUpPage() {
   const navigate = useNavigate();
@@ -62,18 +63,19 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-cin-black px-5 pt-5 pb-10 animate-fade-in">
+    <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-10 animate-fade-in">
+      <div className="px-5 pt-2 pb-2"><Logo variant="mark" width={64} /></div>
       <ScreenHeader title={t('auth.createAccount')} subtitle={t('auth.subtitle')} />
       <div className="mt-6 space-y-3">
         <button
           onClick={() => handleSocial('apple')}
-          className="cin-card w-full flex items-center gap-3 cursor-pointer text-cin-white text-sm font-body"
+          className="cin-btn-outline"
         >
           <Apple className="w-5 h-5" /> {t('auth.continueApple')}
         </button>
         <button
           onClick={() => handleSocial('google')}
-          className="cin-card w-full flex items-center gap-3 cursor-pointer text-cin-white text-sm font-body"
+          className="cin-btn-outline"
         >
           <Chrome className="w-5 h-5" /> {t('auth.continueGoogle')}
         </button>

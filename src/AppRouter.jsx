@@ -76,11 +76,11 @@ const CachedBottlesPage = lazy(() => import('./pages/settings/CachedBottlesPage'
 function RouteSpinner() {
   return (
     <div
-      className="min-h-dvh bg-cin-black flex flex-col items-center justify-center"
+      className="min-h-dvh bg-cin-espresso flex flex-col items-center justify-center"
       role="status"
       aria-label="Loading page"
     >
-      <div className="w-8 h-8 border-2 border-cin-cyan border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-cin-gold border-t-transparent rounded-full animate-spin" />
       <p className="text-cin-muted text-xs mt-3">Loading…</p>
     </div>
   );

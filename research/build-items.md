@@ -78,6 +78,20 @@ Status key:
   
   (`cincin_backend`; source: production-config-checklist)
 
+## Copy and compliance (ABAC)
+
+- 🔴 **Apply the 5 clear copy fixes from the ABAC audit.**
+  - Rename the `ironStomach` award and change its rule.
+  - Rewrite "pour another" at `cincin_www/index.html:743`.
+  - Replace the mock "Four Pillars · Double points this weekend" card in `HomePage.jsx` with real data and empty states.
+  - Rewrite the "Play your final games!" reminder at `cronScheduler.js:339`.
+  - Use a single `SHARE_URL` constant for `playcincin.com`.
+  
+  (all three repos; source: abac-copy-audit)
+- 🔴 **Remove or replace the placeholder site stats and testimonials.** These are `index.html:702-704` and `:846-865`. If they aren't true they are misleading under ACL s18, and if the site is already live that is a problem now. (`cincin_www`; source: abac-copy-audit)
+- 🟠 **Fix the i18n setup.** `src/i18n/en.json` is never imported and isn't valid JSON (parse error at line 99), and most visible copy is hard-coded in the JSX. Move the copy into i18n before the extra-languages fast follow. Any copy lint has to scan JSX, the backend notification strings and `cincin_www`. (`cincin_frontend`; source: abac-copy-audit)
+- 🟠 **Implement sponsored points.** Build whatever mechanic is decided in "Which game mechanics change so CinCin never rewards drinking more?". Today nothing happens: there is no multiplier in `calculatePoints`, the field names don't match (`pointMultiplier` vs `doublePoints`), `doublePoints` defaults to `true`, and `isActive` defaults to `true`. (`cincin_backend`, `cincin_frontend`; source: abac-copy-audit)
+
 ## Share cards
 
 - 🟠 **Make the season share card render.** `SeasonEndPage.jsx` imports `renderSeasonCard` and `canvasToBlob` from the stub `canvasCards.js`, which returns `null`. `PalateWrappedPage.jsx` has working copies to extract. The prototype ticket decides the final design. (`cincin_frontend`; source: object-storage)

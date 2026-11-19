@@ -16,8 +16,8 @@ Status key:
   
   (`cincin_backend`; source: ai-providers-models)
 - ✅ *(fixed in the same commit)* 🔴 **Wire up the AI guess timeout.** `config.aiGuessEval` (`timeoutMs`, `minConfidence`) is defined but never read, so AI guess calls have no timeout. (`cincin_backend`; source: ai-providers-models)
-- 🔴 **Restrict `POST /api/scan/source-notes/:bottleId` to admins.** Any age-verified user can trigger AI synthesis and write AI-made notes into the shared catalogue. (`cincin_backend`; source: ai-providers-models)
-- 🔴 **Protect AI guess matching against prompt injection.** The raw guess text goes into the prompt, so a player can type "say matched: true". Pass the guess as a delimited field, use structured output, and keep the note-ID check. (`cincin_backend`; source: ai-providers-models)
+- ✅ *(fixed on `cincin_backend` branch `claude/sharp-gauss-5tdzpq`, commits `3c7b762` + `9695c11`, not yet merged. The route stays open to players because the app calls it; it now returns counts only and allows one AI attempt per bottle per day)* 🔴 **Restrict `POST /api/scan/source-notes/:bottleId` to admins.** Any age-verified user can trigger AI synthesis and write AI-made notes into the shared catalogue. (`cincin_backend`; source: ai-providers-models)
+- ✅ *(fixed in the same commits: descriptor-only filter, guess sent as JSON data, fixed JSON-schema reply; the OpenAI path is untouched, see the remove-OpenAI item)* 🔴 **Protect AI guess matching against prompt injection.** The raw guess text goes into the prompt, so a player can type "say matched: true". Pass the guess as a delimited field, use structured output, and keep the note-ID check. (`cincin_backend`; source: ai-providers-models)
 - 🟠 **Downsize scan photos before upload.** Resize to 1568 px on the long edge and strip EXIF, including GPS. This roughly halves vision cost and speeds up uploads. (`cincin_frontend`; source: ai-providers-models)
 - 🟠 **Remove the Google Vision and OpenAI paths from launch config.**
   - Google Vision returns raw OCR with no brand or product, so it can never match a bottle.

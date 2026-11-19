@@ -9,13 +9,13 @@ Status key:
 
 ## AI
 
-- 🔴 **Replace the retired Claude model, and handle thinking blocks.** `claude-sonnet-4-20250514` (retired 2026-06-15) is hard-coded in `scanService.js` and `gameService.js`, so scanning, note synthesis and AI guess matching fail.
+- ✅ *(fixed on `cincin_backend` branch `claude/sharp-gauss-5tdzpq`, commit `bfafeb0`, not yet merged)* 🔴 **Replace the retired Claude model, and handle thinking blocks.** `claude-sonnet-4-20250514` (retired 2026-06-15) is hard-coded in `scanService.js` and `gameService.js`, so scanning, note synthesis and AI guess matching fail.
   - **Thinking breaks a plain ID swap.** On `claude-sonnet-5-5` and `claude-haiku-5-5` thinking is on by default: the response can start with a `thinking` block, and thinking counts toward `max_tokens`. The three call sites read `content[0].text` with 300–600-token caps, so a plain ID swap returns confidence 0 or a silent `null`.
   - **Parsing:** read the first `text` block and size `max_tokens` (or turn thinking off) as the research note specifies.
   - **Config:** add `AI_VISION_MODEL`, `AI_LLM_MODEL`, `AI_SYNTHESIS_MODEL`, the `*_FALLBACK_MODEL` variables, timeouts and `AI_INFERENCE_GEO`.
   
   (`cincin_backend`; source: ai-providers-models)
-- 🔴 **Wire up the AI guess timeout.** `config.aiGuessEval` (`timeoutMs`, `minConfidence`) is defined but never read, so AI guess calls have no timeout. (`cincin_backend`; source: ai-providers-models)
+- ✅ *(fixed in the same commit)* 🔴 **Wire up the AI guess timeout.** `config.aiGuessEval` (`timeoutMs`, `minConfidence`) is defined but never read, so AI guess calls have no timeout. (`cincin_backend`; source: ai-providers-models)
 - 🔴 **Restrict `POST /api/scan/source-notes/:bottleId` to admins.** Any age-verified user can trigger AI synthesis and write AI-made notes into the shared catalogue. (`cincin_backend`; source: ai-providers-models)
 - 🔴 **Protect AI guess matching against prompt injection.** The raw guess text goes into the prompt, so a player can type "say matched: true". Pass the guess as a delimited field, use structured output, and keep the note-ID check. (`cincin_backend`; source: ai-providers-models)
 - 🟠 **Downsize scan photos before upload.** Resize to 1568 px on the long edge and strip EXIF, including GPS. This roughly halves vision cost and speeds up uploads. (`cincin_frontend`; source: ai-providers-models)

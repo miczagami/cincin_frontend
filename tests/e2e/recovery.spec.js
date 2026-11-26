@@ -9,12 +9,13 @@ import { test, expect } from '@playwright/test';
 import { signIn } from './helpers';
 
 const RENDER_ERROR = 'Kaboom while rendering';
+const BOUNDARY_ERROR = 'Kaboom in the route boundary';
 
-/** Serve a page module whose component throws when it renders. */
-async function breakModule(page, modulePath) {
+/** Serve a module whose default-exported component throws `message` when it renders. */
+async function breakModule(page, modulePath, message = RENDER_ERROR) {
   await page.route(`**${modulePath}*`, (route) => route.fulfill({
     contentType: 'application/javascript',
-    body: `export default function Broken() { throw new Error(${JSON.stringify(RENDER_ERROR)}); }`,
+    body: `export default function Broken() { throw new Error(${JSON.stringify(message)}); }`,
   }));
 }
 
@@ -66,7 +67,8 @@ test.describe('recovery screen', () => {
 
     await page.getByRole('button', { name: 'Go home' }).click();
 
-    await expect(page).not.toHaveURL(/forgot-password/);
+    // Signed out, home sends the player on to the auth splash
+    await expect(page).toHaveURL(/\/auth$/);
     await expect(recoveryScreen(page)).toHaveCount(0);
   });
 
@@ -84,13 +86,14 @@ test.describe('recovery screen', () => {
 
   test('when the route-level recovery itself fails, the app-level boundary still recovers', async ({ page }) => {
     const reports = collectReports(page);
-    await breakModule(page, '/src/components/layout/RouteErrorBoundary.jsx');
+    await breakModule(page, '/src/components/layout/RouteErrorBoundary.jsx', BOUNDARY_ERROR);
     await openBrokenForgotPassword(page);
 
     await expect(recoveryScreen(page)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Go home' })).toBeVisible();
     await expect(page.getByText(RENDER_ERROR)).toHaveCount(0);
-    await expect.poll(reports).toContain(`[reportError] app Error: ${RENDER_ERROR}`);
+    await expect(page.getByText(BOUNDARY_ERROR)).toHaveCount(0);
+    await expect.poll(reports).toContain(`[reportError] app Error: ${BOUNDARY_ERROR}`);
   });
 });

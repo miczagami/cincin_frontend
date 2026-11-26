@@ -73,4 +73,18 @@ test.describe('recovery screen', () => {
     await expect(recoveryScreen(page)).toHaveCount(0);
     await expect(page.locator('input[type="email"]')).toBeVisible();
   });
+
+  test('when the route-level recovery itself fails, the app-level boundary still recovers', async ({ page }) => {
+    const reports = [];
+    page.on('console', (msg) => { if (msg.type() === 'error' && msg.text().includes('[reportError]')) reports.push(msg.text()); });
+    await breakModule(page, '/src/pages/auth/ForgotPasswordPage.jsx');
+    await breakModule(page, '/src/components/layout/RouteErrorBoundary.jsx');
+    await page.goto('/auth/forgot-password');
+
+    await expect(recoveryScreen(page)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Go home' })).toBeVisible();
+    await expect(page.getByText(RENDER_ERROR)).toHaveCount(0);
+    await expect.poll(() => reports.join('\n')).toContain(`[reportError] app Error: ${RENDER_ERROR}`);
+  });
 });

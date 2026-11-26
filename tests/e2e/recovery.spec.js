@@ -54,6 +54,21 @@ test.describe('recovery screen', () => {
     await expect(page.getByText(RENDER_ERROR)).toHaveCount(0);
   });
 
+  test('when Home itself is broken, signing out is the way back', async ({ browser }) => {
+    const page = await signIn(browser, 'host@test.com');
+    await breakModule(page, '/src/pages/home/HomePage.jsx');
+    await page.goto('/');
+    await expect(recoveryScreen(page)).toBeVisible();
+
+    await page.getByRole('button', { name: 'Sign out' }).click();
+    await expect(page).toHaveURL(/\/auth$/);
+
+    // Signed out for real: Home now sends the player to the auth splash instead of failing again
+    await page.goto('/');
+    await expect(page).toHaveURL(/\/auth$/);
+    await expect(recoveryScreen(page)).toHaveCount(0);
+  });
+
   test('the render error is reported', async ({ page }) => {
     const reports = collectReports(page);
     await openBrokenForgotPassword(page);

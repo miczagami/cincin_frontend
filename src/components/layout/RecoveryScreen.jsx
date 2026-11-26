@@ -8,6 +8,12 @@
 
 import Logo from '../brand/Logo';
 import { Button } from '../ui';
+import useAuthStore from '../../context/authStore';
+
+/** Clear the session, then load the auth screen afresh. */
+async function signOut() {
+  try { await useAuthStore.getState().logout(); } finally { window.location.assign('/auth'); }
+}
 
 export default function RecoveryScreen() {
   return (
@@ -19,7 +25,10 @@ export default function RecoveryScreen() {
       </p>
       <div className="w-full max-w-xs mt-8 flex flex-col gap-3">
         <Button onClick={() => window.location.reload()}>Try again</Button>
-        <Button variant="outline" onClick={() => window.location.assign('/')}>Go home</Button>
+        {/* Home is where "Go home" leads, so when Home itself is broken, signing out is the way back */}
+        {window.location.pathname === '/'
+          ? <Button variant="outline" onClick={signOut}>Sign out</Button>
+          : <Button variant="outline" onClick={() => window.location.assign('/')}>Go home</Button>}
       </div>
     </div>
   );

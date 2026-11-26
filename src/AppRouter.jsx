@@ -21,6 +21,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 // Layout — loaded eagerly (always needed)
 import AppShell from './components/layout/AppShell';
 import { RequireAuth, RedirectIfAuth } from './components/layout/AuthGuard';
+import RouteErrorBoundary from './components/layout/RouteErrorBoundary';
 
 // ── Lazy-loaded page groups ──
 
@@ -92,105 +93,112 @@ function S({ children }) {
 }
 
 const router = createBrowserRouter([
-  // ── Public auth routes ──
+  // Every route sits under this one, so a screen that throws while rendering
+  // shows the recovery screen instead of a blank page or a raw stack.
   {
-    path: '/auth',
+    errorElement: <RouteErrorBoundary />,
     children: [
-      { index: true, element: <RedirectIfAuth><S><SplashPage /></S></RedirectIfAuth> },
-      { path: 'signup', element: <RedirectIfAuth><S><SignUpPage /></S></RedirectIfAuth> },
-      { path: 'login', element: <RedirectIfAuth><S><LoginPage /></S></RedirectIfAuth> },
-      { path: 'forgot-password', element: <S><ForgotPasswordPage /></S> },
-      { path: 'verify-email', element: <S><VerifyEmailPage /></S> },
-      { path: 'age-verify', element: <S><AgeVerifyPage /></S> },
-      { path: 'notifications', element: <S><NotificationsOnboardPage /></S> },
+      // ── Public auth routes ──
+      {
+        path: '/auth',
+        children: [
+          { index: true, element: <RedirectIfAuth><S><SplashPage /></S></RedirectIfAuth> },
+          { path: 'signup', element: <RedirectIfAuth><S><SignUpPage /></S></RedirectIfAuth> },
+          { path: 'login', element: <RedirectIfAuth><S><LoginPage /></S></RedirectIfAuth> },
+          { path: 'forgot-password', element: <S><ForgotPasswordPage /></S> },
+          { path: 'verify-email', element: <S><VerifyEmailPage /></S> },
+          { path: 'age-verify', element: <S><AgeVerifyPage /></S> },
+          { path: 'notifications', element: <S><NotificationsOnboardPage /></S> },
+        ],
+      },
+
+      // ── Authenticated routes (with bottom nav via AppShell) ──
+      {
+        element: <RequireAuth><AppShell /></RequireAuth>,
+        children: [
+          { path: '/', element: <S><HomePage /></S> },
+          { path: '/clubs', element: <S><ClubsListPage /></S> },
+          { path: '/buy', element: <S><BuyPage /></S> },
+          { path: '/palate', element: <S><PalateLockedPage /></S> },
+          { path: '/profile', element: <S><ProfilePage /></S> },
+          { path: '/notifications', element: <S><NotificationsPage /></S> },
+        ],
+      },
+
+      // ── Scan routes (full-screen, no bottom nav) ──
+      {
+        path: '/scan',
+        children: [
+          { index: true, element: <RequireAuth><S><ScanPage /></S></RequireAuth> },
+          { path: 'confirm', element: <RequireAuth><S><ScanConfirmPage /></S></RequireAuth> },
+          { path: 'search', element: <RequireAuth><S><ScanSearchPage /></S></RequireAuth> },
+        ],
+      },
+
+      // ── Game routes (full-screen, no bottom nav) ──
+      {
+        path: '/game',
+        children: [
+          { path: 'setup', element: <RequireAuth><S><GameSetupPage /></S></RequireAuth> },
+          { path: 'join', element: <RequireAuth><S><JoinGamePage /></S></RequireAuth> },
+          { path: 'lobby/:gameId', element: <RequireAuth><S><GameLobbyPage /></S></RequireAuth> },
+          { path: 'play/:gameId', element: <RequireAuth><S><GamePlayPage /></S></RequireAuth> },
+          { path: 'results/:gameId', element: <RequireAuth><S><GameResultsPage /></S></RequireAuth> },
+        ],
+      },
+
+      // ── Club routes (full-screen, no bottom nav) ──
+      {
+        path: '/clubs',
+        children: [
+          { path: 'create', element: <RequireAuth><S><ClubCreatePage /></S></RequireAuth> },
+          { path: ':clubId', element: <RequireAuth><S><ClubDetailPage /></S></RequireAuth> },
+          { path: ':clubId/season-end/:seasonId', element: <RequireAuth><S><SeasonEndPage /></S></RequireAuth> },
+          { path: ':clubId/season-end', element: <RequireAuth><S><SeasonEndPage /></S></RequireAuth> },
+        ],
+      },
+
+      // ── Palate routes (full-screen) ──
+      {
+        path: '/palate',
+        children: [
+          { path: 'profile', element: <RequireAuth><S><PalateProfilePage /></S></RequireAuth> },
+          { path: 'wrapped', element: <RequireAuth><S><PalateWrappedPage /></S></RequireAuth> },
+        ],
+      },
+
+      // ── Profile sub-routes (full-screen) ──
+      {
+        path: '/settings',
+        element: <RequireAuth><S><SettingsPage /></S></RequireAuth>,
+      },
+      {
+        path: '/settings/cached-bottles',
+        element: <RequireAuth><S><CachedBottlesPage /></S></RequireAuth>,
+      },
+      {
+        path: '/subscription',
+        element: <RequireAuth><S><SubscriptionPage /></S></RequireAuth>,
+      },
+      {
+        path: '/subscription/success',
+        element: <RequireAuth><S><SubscriptionPage /></S></RequireAuth>,
+      },
+      {
+        path: '/subscription/cancel',
+        element: <RequireAuth><S><SubscriptionPage /></S></RequireAuth>,
+      },
+
+      // ── Discovery feed (full-screen) ──
+      {
+        path: '/discover',
+        element: <RequireAuth><S><DiscoveryPage /></S></RequireAuth>,
+      },
+
+      // ── Fallback ──
+      { path: '*', element: <S><SplashPage /></S> },
     ],
   },
-
-  // ── Authenticated routes (with bottom nav via AppShell) ──
-  {
-    element: <RequireAuth><AppShell /></RequireAuth>,
-    children: [
-      { path: '/', element: <S><HomePage /></S> },
-      { path: '/clubs', element: <S><ClubsListPage /></S> },
-      { path: '/buy', element: <S><BuyPage /></S> },
-      { path: '/palate', element: <S><PalateLockedPage /></S> },
-      { path: '/profile', element: <S><ProfilePage /></S> },
-      { path: '/notifications', element: <S><NotificationsPage /></S> },
-    ],
-  },
-
-  // ── Scan routes (full-screen, no bottom nav) ──
-  {
-    path: '/scan',
-    children: [
-      { index: true, element: <RequireAuth><S><ScanPage /></S></RequireAuth> },
-      { path: 'confirm', element: <RequireAuth><S><ScanConfirmPage /></S></RequireAuth> },
-      { path: 'search', element: <RequireAuth><S><ScanSearchPage /></S></RequireAuth> },
-    ],
-  },
-
-  // ── Game routes (full-screen, no bottom nav) ──
-  {
-    path: '/game',
-    children: [
-      { path: 'setup', element: <RequireAuth><S><GameSetupPage /></S></RequireAuth> },
-      { path: 'join', element: <RequireAuth><S><JoinGamePage /></S></RequireAuth> },
-      { path: 'lobby/:gameId', element: <RequireAuth><S><GameLobbyPage /></S></RequireAuth> },
-      { path: 'play/:gameId', element: <RequireAuth><S><GamePlayPage /></S></RequireAuth> },
-      { path: 'results/:gameId', element: <RequireAuth><S><GameResultsPage /></S></RequireAuth> },
-    ],
-  },
-
-  // ── Club routes (full-screen, no bottom nav) ──
-  {
-    path: '/clubs',
-    children: [
-      { path: 'create', element: <RequireAuth><S><ClubCreatePage /></S></RequireAuth> },
-      { path: ':clubId', element: <RequireAuth><S><ClubDetailPage /></S></RequireAuth> },
-      { path: ':clubId/season-end/:seasonId', element: <RequireAuth><S><SeasonEndPage /></S></RequireAuth> },
-      { path: ':clubId/season-end', element: <RequireAuth><S><SeasonEndPage /></S></RequireAuth> },
-    ],
-  },
-
-  // ── Palate routes (full-screen) ──
-  {
-    path: '/palate',
-    children: [
-      { path: 'profile', element: <RequireAuth><S><PalateProfilePage /></S></RequireAuth> },
-      { path: 'wrapped', element: <RequireAuth><S><PalateWrappedPage /></S></RequireAuth> },
-    ],
-  },
-
-  // ── Profile sub-routes (full-screen) ──
-  {
-    path: '/settings',
-    element: <RequireAuth><S><SettingsPage /></S></RequireAuth>,
-  },
-  {
-    path: '/settings/cached-bottles',
-    element: <RequireAuth><S><CachedBottlesPage /></S></RequireAuth>,
-  },
-  {
-    path: '/subscription',
-    element: <RequireAuth><S><SubscriptionPage /></S></RequireAuth>,
-  },
-  {
-    path: '/subscription/success',
-    element: <RequireAuth><S><SubscriptionPage /></S></RequireAuth>,
-  },
-  {
-    path: '/subscription/cancel',
-    element: <RequireAuth><S><SubscriptionPage /></S></RequireAuth>,
-  },
-
-  // ── Discovery feed (full-screen) ──
-  {
-    path: '/discover',
-    element: <RequireAuth><S><DiscoveryPage /></S></RequireAuth>,
-  },
-
-  // ── Fallback ──
-  { path: '*', element: <S><SplashPage /></S> },
 ]);
 
 export default function AppRouter() {

@@ -20,10 +20,22 @@ async function breakModule(page, modulePath) {
 
 const recoveryScreen = (page) => page.getByRole('heading', { name: 'Something went wrong' });
 
+/** Open the forgot-password screen with its page module broken. */
+async function openBrokenForgotPassword(page) {
+  await breakModule(page, '/src/pages/auth/ForgotPasswordPage.jsx');
+  await page.goto('/auth/forgot-password');
+}
+
+/** Collect every console error that came through reportError(). */
+function collectReports(page) {
+  const reports = [];
+  page.on('console', (msg) => { if (msg.type() === 'error' && msg.text().includes('[reportError]')) reports.push(msg.text()); });
+  return () => reports.join('\n');
+}
+
 test.describe('recovery screen', () => {
   test('a render error in a route shows the recovery screen, not a raw error', async ({ page }) => {
-    await breakModule(page, '/src/pages/auth/ForgotPasswordPage.jsx');
-    await page.goto('/auth/forgot-password');
+    await openBrokenForgotPassword(page);
 
     await expect(recoveryScreen(page)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
@@ -42,18 +54,15 @@ test.describe('recovery screen', () => {
   });
 
   test('the render error is reported', async ({ page }) => {
-    const reports = [];
-    page.on('console', (msg) => { if (msg.type() === 'error' && msg.text().includes('[reportError]')) reports.push(msg.text()); });
-    await breakModule(page, '/src/pages/auth/ForgotPasswordPage.jsx');
-    await page.goto('/auth/forgot-password');
+    const reports = collectReports(page);
+    await openBrokenForgotPassword(page);
     await expect(recoveryScreen(page)).toBeVisible();
 
-    await expect.poll(() => reports.join('\n')).toContain(`[reportError] route Error: ${RENDER_ERROR}`);
+    await expect.poll(reports).toContain(`[reportError] route Error: ${RENDER_ERROR}`);
   });
 
   test('"Go home" leaves the broken screen', async ({ page }) => {
-    await breakModule(page, '/src/pages/auth/ForgotPasswordPage.jsx');
-    await page.goto('/auth/forgot-password');
+    await openBrokenForgotPassword(page);
 
     await page.getByRole('button', { name: 'Go home' }).click();
 
@@ -62,8 +71,7 @@ test.describe('recovery screen', () => {
   });
 
   test('"Try again" reloads the same screen, which renders once the fault is gone', async ({ page }) => {
-    await breakModule(page, '/src/pages/auth/ForgotPasswordPage.jsx');
-    await page.goto('/auth/forgot-password');
+    await openBrokenForgotPassword(page);
     await expect(recoveryScreen(page)).toBeVisible();
     await page.unrouteAll();
 
@@ -75,16 +83,14 @@ test.describe('recovery screen', () => {
   });
 
   test('when the route-level recovery itself fails, the app-level boundary still recovers', async ({ page }) => {
-    const reports = [];
-    page.on('console', (msg) => { if (msg.type() === 'error' && msg.text().includes('[reportError]')) reports.push(msg.text()); });
-    await breakModule(page, '/src/pages/auth/ForgotPasswordPage.jsx');
+    const reports = collectReports(page);
     await breakModule(page, '/src/components/layout/RouteErrorBoundary.jsx');
-    await page.goto('/auth/forgot-password');
+    await openBrokenForgotPassword(page);
 
     await expect(recoveryScreen(page)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Go home' })).toBeVisible();
     await expect(page.getByText(RENDER_ERROR)).toHaveCount(0);
-    await expect.poll(() => reports.join('\n')).toContain(`[reportError] app Error: ${RENDER_ERROR}`);
+    await expect.poll(reports).toContain(`[reportError] app Error: ${RENDER_ERROR}`);
   });
 });

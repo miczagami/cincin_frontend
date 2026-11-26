@@ -60,7 +60,7 @@ test.describe('emailed links', () => {
     });
 
     await test.step('the emailed link verifies the account and unlocks clubs', async () => {
-      await page.goto(await emailedLink(userId, '/auth/verify-email'));
+      await page.goto(await emailedLink({ userId, email }, '/auth/verify-email'));
       await expect(page.getByText('Email verified')).toBeVisible();
       await page.goto('/clubs/create');
       await expect(page.getByText('Verify your email to create')).toHaveCount(0);
@@ -71,7 +71,7 @@ test.describe('emailed links', () => {
       await page.goto('/auth/forgot-password');
       await page.locator('input').first().fill(email);
       await page.getByRole('button', { name: /send|reset/i }).first().click();
-      await page.goto(await emailedLink(userId, '/auth/forgot-password'));
+      await page.goto(await emailedLink({ userId, email }, '/auth/forgot-password'));
       const fields = page.locator('input[type="password"]');
       await fields.nth(0).fill('NewPass123');
       await fields.nth(1).fill('NewPass123');

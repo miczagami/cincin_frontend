@@ -30,12 +30,17 @@ export async function pickBottle(page) {
  * Without SendGrid the backend logs account emails as
  * "[Email Mock] → user <userId> | <subject> | <url>", naming the user by ID, never by address.
  * Point BACKEND_LOG at its output to test emailed links.
+ *
+ * Until the backend change that logs IDs (miczagami/cincin_backend#6) is on both repos' main
+ * branches, CI can pair this suite with a backend that still logs "[Email Mock] → <email> | …",
+ * so that form is matched too. Drop it once both have merged.
  */
-export async function emailedLink(userId, path) {
+export async function emailedLink({ userId, email }, path) {
   const log = process.env.BACKEND_LOG;
+  const recipients = [`[Email Mock] → user ${userId} `, `[Email Mock] → ${email} `];
   for (let i = 0; i < 40; i++) {
     const line = fs.readFileSync(log, 'utf8').split('\n').reverse()
-      .find((l) => l.includes(`[Email Mock] → user ${userId} `) && l.includes(path));
+      .find((l) => recipients.some((r) => l.includes(r)) && l.includes(path));
     if (line) {
       const url = new URL(line.split(' | ').pop().trim());
       return url.pathname + url.search;

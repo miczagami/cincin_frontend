@@ -262,3 +262,23 @@ test("push still sets up when the app's first load runs before its worker has re
 
   expect((await pushOutcome).text()).toContain('[Push] Initialised');
 });
+
+test('a tap opens its screen even when the open app tab is one the worker does not control', async ({ browser, baseURL }) => {
+  const page = await signInWithPushAllowed(browser);
+  const context = page.context();
+  await expect.poll(() => controllingWorker(page)).toBe('/sw.js');
+  // A hard reload (Shift+Reload) leaves the tab outside the worker's control, and the worker can't navigate it
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Network.enable');
+  await cdp.send('Network.setBypassServiceWorker', { bypass: true });
+  await page.reload();
+  expect(await page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(false);
+  const worker = context.serviceWorkers().find((w) => w.url().endsWith('/sw.js'));
+  await worker.evaluate(() => self.registration.showNotification('Palate updated', {
+    data: { type: 'palate_updated', url: '/palate/profile' },
+  }));
+
+  const { opened } = await tapNotification(context);
+
+  expect(opened).toEqual([`${baseURL}/palate/profile`]);
+});

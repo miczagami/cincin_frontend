@@ -111,7 +111,9 @@ async function openApp(path) {
   // Only the app: a link to another site opens the app's home instead
   const target = new URL(path, self.location.origin);
   const url = target.origin === self.location.origin ? target.href : new URL('/', self.location.origin).href;
-  const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  // Only a window this worker controls can be navigated (a hard-reloaded tab can't), so any other
+  // app tab is left alone and a new window opens instead
+  const windows = await self.clients.matchAll({ type: 'window' });
   const open = windows.find((client) => 'focus' in client);
   if (open) {
     await open.focus();

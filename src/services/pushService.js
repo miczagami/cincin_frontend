@@ -27,19 +27,22 @@ import { getMessaging, getToken, onMessage, isSupported } from "firebase/messagi
 import { notifications } from "./api";
 
 // ─── Firebase Config ───
-// These are PUBLIC identifiers — safe to ship in client code.
-// Replace with your actual Firebase project config.
+// Public project identifiers, baked in at build time from the VITE_FIREBASE_* variables.
+// The service worker (src/sw.js) reads the same variables.
 const FIREBASE_CONFIG = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "YOUR_FIREBASE_API_KEY",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "your-project.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "your-project-id",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "your-project.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "YOUR_SENDER_ID",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "YOUR_APP_ID",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 // VAPID key for web push (from Firebase Console → Cloud Messaging → Web Push certificates)
-const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY || "YOUR_VAPID_KEY";
+const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+
+// Push needs a Firebase project configured at build time
+const FIREBASE_CONFIGURED = Object.values(FIREBASE_CONFIG).every(Boolean) && Boolean(VAPID_KEY);
 
 // ─── Singleton state ───
 let _app = null;
@@ -53,6 +56,8 @@ let _onForegroundMessage = null; // Callback for foreground messages
  */
 export async function isPushSupported() {
   try {
+    if (!FIREBASE_CONFIGURED) return false;
+
     // Check Firebase-level support
     const firebaseSupported = await isSupported();
     if (!firebaseSupported) return false;
@@ -98,10 +103,10 @@ export async function initPushNotifications() {
     _app = initializeApp(FIREBASE_CONFIG);
     _messaging = getMessaging(_app);
 
-    // Register the Firebase Messaging service worker
-    const swRegistration = await registerServiceWorker();
+    // Push arrives through the app's own service worker (src/sw.js)
+    const swRegistration = await appServiceWorker();
     if (!swRegistration) {
-      console.warn("[Push] Service worker registration failed");
+      console.warn("[Push] No service worker controls the app");
       return false;
     }
 
@@ -152,10 +157,7 @@ export async function requestPushPermission() {
       return false;
     }
 
-    // Get the service worker registration
-    const swRegistration = await navigator.serviceWorker.getRegistration(
-      "/firebase-messaging-sw.js"
-    );
+    const swRegistration = await appServiceWorker();
 
     if (!swRegistration) {
       console.warn("[Push] No service worker registration found");
@@ -213,28 +215,13 @@ export function getCurrentToken() {
 // ═══════════════════════════════════════════
 
 /**
- * Register the Firebase Messaging service worker.
- * This is separate from the Workbox service worker.
+ * The app's service worker registration (src/sw.js, registered by vite-plugin-pwa),
+ * which also receives push. Null where none is registered (e.g. the dev server).
  */
-async function registerServiceWorker() {
-  try {
-    // Pass Firebase config to the service worker via a global
-    // The SW reads this from self.__FIREBASE_CONFIG__
-    const swUrl = "/firebase-messaging-sw.js";
-
-    const registration = await navigator.serviceWorker.register(swUrl, {
-      scope: "/",
-    });
-
-    // Wait for the service worker to be ready
-    await navigator.serviceWorker.ready;
-
-    console.log("[Push] Service worker registered:", registration.scope);
-    return registration;
-  } catch (err) {
-    console.error("[Push] SW registration failed:", err.message);
-    return null;
-  }
+async function appServiceWorker() {
+  const registration = await navigator.serviceWorker.getRegistration("/");
+  if (!registration) return null;
+  return navigator.serviceWorker.ready;
 }
 
 /**

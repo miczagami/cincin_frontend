@@ -23,3 +23,5 @@ dev-dist/
 # Playwright
 playwright-report/
 test-results/
+dist-pwa-test
+dist-pwa-unconfigured

@@ -7,8 +7,5 @@
 /registerSW.js
   Cache-Control: no-cache
 
-/firebase-messaging-sw.js
-  Cache-Control: no-cache
-
 /manifest.webmanifest
   Cache-Control: no-cache

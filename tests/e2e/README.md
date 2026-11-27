@@ -26,3 +26,10 @@ backend logs account emails there when SendGrid isn't configured).
 
 CI (`.github/workflows/ci.yml`) checks out the backend branch with the same
 name (or `main`), seeds a Postgres service and runs the suite.
+
+## Push and offline (production build)
+
+`tests/pwa/` runs against a production build, since the service worker only exists there.
+Playwright builds it into `dist-pwa-test/` with stand-in Firebase values (see
+`PWA_FIREBASE_ENV` in `playwright.config.js`) and serves it with `vite preview` on :4173,
+which also proxies `/api` to the backend. Run one project with `--project smoke` or `--project pwa`.

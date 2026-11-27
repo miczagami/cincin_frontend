@@ -125,9 +125,10 @@ function appPathFor(data) {
     case 'club_member_joined':
     case 'club_approval':
     case 'weekly_standings':
-    // The club screen shows its season (season-end is the admin's "end season" step)
-    case 'season_ending':
-    case 'season_ended':
+    case 'season_ending': // the club screen shows the season that is ending
+      return data.clubId ? `/clubs/${encodeURIComponent(data.clubId)}` : '/clubs';
+    case 'season_ended': // that season's final standings and awards
+      if (data.clubId && data.seasonId) return `/clubs/${encodeURIComponent(data.clubId)}/season-end/${encodeURIComponent(data.seasonId)}`;
       return data.clubId ? `/clubs/${encodeURIComponent(data.clubId)}` : '/clubs';
     case 'palate_updated':
       return '/palate/profile';

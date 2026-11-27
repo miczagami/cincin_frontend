@@ -43,6 +43,7 @@ const SCREENS = {
   gameJoin: (page) => heading(page, 'Join Game'),
   clubJoin: (page) => page.getByPlaceholder('e.g. A7K3M2'),
   club: (page, club) => heading(page, club.name),
+  seasonResults: (page) => heading(page, 'Season Complete! 🏆'),
   palateProfile: (page) => heading(page, 'Palate Profile'),
   palateWrapped: (page) => heading(page, 'Palate Wrapped'),
   subscription: (page) => heading(page, 'Subscription'),
@@ -51,6 +52,23 @@ const SCREENS = {
   verifyEmail: (page) => heading(page, 'Verify Email'),
   resetPassword: (page) => heading(page, /reset password|new password/i),
 };
+
+/** Call the API as the signed-in player. */
+function api(page, method, apiPath, body) {
+  return page.evaluate(async ({ method, apiPath, body }) => (await fetch(`/api${apiPath}`, {
+    method,
+    headers: { Authorization: `Bearer ${sessionStorage.getItem('cin_access_token')}`, 'Content-Type': 'application/json' },
+    body: body && JSON.stringify(body),
+  })).json(), { method, apiPath, body });
+}
+
+/** A new club of the host's (a Pro player) whose first season has ended, as a "season ended" notice follows. */
+async function clubWithEndedSeason(page) {
+  const club = await api(page, 'POST', '/clubs', { name: `Links Club ${Date.now()}`, seasonType: 'ROLLING' });
+  const [season] = club.seasons;
+  await api(page, 'POST', `/clubs/${club.id}/seasons/${season.id}/end`);
+  return { club, seasonId: season.id };
+}
 
 /** The seeded club the host runs ("Friday Night Vino", invite code FNV001). */
 async function seededClub(page) {
@@ -65,8 +83,8 @@ async function seededClub(page) {
 test('every app link the backend sends opens a real screen', async ({ browser }) => {
   test.info().annotations.push({ type: 'backend', description: `${BACKEND} @ ${backendRevision()}` });
   const page = await signIn(browser, 'host@test.com');
-  const club = await seededClub(page);
-  const params = { gameCode: 'ABC123', inviteCode: 'FNV001', clubId: club.id, token: 'not-a-real-token' };
+  const { club, seasonId } = await clubWithEndedSeason(page);
+  const params = { gameCode: 'ABC123', inviteCode: 'FNV001', clubId: club.id, seasonId, token: 'not-a-real-token' };
 
   for (const [name, pathFor] of Object.entries(appPaths)) {
     const link = pathFor(params);
@@ -87,9 +105,23 @@ test("a club invite link opens the club join form with the invite's code", async
   await expect(page.getByPlaceholder('e.g. A7K3M2')).toHaveValue('FNV001');
 });
 
-test('a club invite code is cleaned like a game code, and a malformed one is ignored', async ({ browser }) => {
+test("a season-ended link shows that season's final standings, not the admin's end-season step", async ({ browser }) => {
+  const page = await signIn(browser, 'host@test.com');
+  const { club, seasonId } = await clubWithEndedSeason(page);
+
+  await page.goto(appPaths.seasonResults({ clubId: club.id, seasonId }));
+
+  await expect(heading(page, 'Season Complete! 🏆')).toBeVisible();
+  await expect(page.getByText('Final Standings')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'End Season' })).toHaveCount(0);
+});
+
+test('join codes in links are cleaned, and a malformed one is ignored', async ({ browser }) => {
   const page = await signIn(browser, 'player3@test.com');
   const codeField = page.getByPlaceholder('e.g. A7K3M2');
+
+  await page.goto(appPaths.gameJoin({ gameCode: ' abc-123 ' }));
+  await expect(page.locator('input').first()).toHaveValue('ABC123');
 
   await page.goto(appPaths.clubJoin({ inviteCode: ' fnv-001 ' }));
   await expect(codeField).toHaveValue('FNV001');
@@ -151,6 +183,8 @@ test.describe('a signed-out player who opens a join link', () => {
   });
 
   test('lands on the join after signing up instead', async ({ page }) => {
+    // The test's clock: age verification's own move-on timer only runs when the test says
+    await page.clock.install();
     const link = appPaths.gameJoin({ gameCode: 'ABC123' });
     await page.goto(link);
     await expect(page).toHaveURL(/\/auth$/);
@@ -162,8 +196,20 @@ test.describe('a signed-out player who opens a join link', () => {
     await page.getByRole('button', { name: 'Next' }).click();
 
     await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === link);
-    await page.waitForTimeout(2000); // longer than age verification's own move-on delay
+    await page.clock.runFor(10_000); // well past every timer age verification sets
     await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === link);
+  });
+
+  test('going Back from the notifications step of sign-up does not reopen age verification', async ({ page }) => {
+    await page.goto(appPaths.gameJoin({ gameCode: 'ABC123' }));
+    await signUp(page, { name: 'Back User', email: `back${Date.now()}@test.com` });
+    await page.getByText('[Dev] Skip verification').click();
+    await expect(page).toHaveURL(/\/auth\/notifications/);
+
+    await page.goBack();
+
+    // Signed up, so the sign-up screen sends them on into the app rather than back to verification
+    await expect(page).not.toHaveURL(/\/auth\//);
   });
 
   test('is never sent off the app by a stored return path', async ({ page }) => {

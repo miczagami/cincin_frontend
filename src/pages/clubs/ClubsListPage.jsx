@@ -14,6 +14,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import useClubStore from '../../context/clubStore';
 import useAuthStore from '../../context/authStore';
 import { ScreenHeader, Button, Card, Input, Pill, EmptyState } from '../../components/ui';
+import { cleanJoinCode, joinCodeFromLink } from '../../utils/joinCode';
 
 function ordinalSuffix(n) {
   const s = ['th', 'st', 'nd', 'rd'];
@@ -27,11 +28,9 @@ export default function ClubsListPage() {
   const isPro = user?.subscriptionTier === 'PRO';
   const { clubs, fetchMyClubs, joinClub, isLoading, isJoining, error } = useClubStore();
 
-  // An invite link (/clubs/join?code=…) opens the join form with its code filled in.
-  // Codes are cleaned as on the game join screen; one that isn't 6 characters is ignored.
+  // An invite link (/clubs/join?code=…) opens the join form with its code filled in
   const [searchParams] = useSearchParams();
-  const linkCode = (searchParams.get('code') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const inviteCode = linkCode.length === 6 ? linkCode : '';
+  const inviteCode = joinCodeFromLink(searchParams.get('code'));
   const [showJoin, setShowJoin] = useState(Boolean(inviteCode));
   const [joinCode, setJoinCode] = useState(inviteCode);
   // The same screen serves /clubs and /clubs/join, so follow the link when it changes (e.g. the Clubs tab)
@@ -78,7 +77,7 @@ export default function ClubsListPage() {
         <Card className="mb-6">
           <p className="text-xs text-cin-muted mb-2">Enter invite code</p>
           <div className="flex gap-2">
-            <Input value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="e.g. A7K3M2" maxLength={6} className="flex-1 uppercase tracking-widest text-center font-bold" autoFocus />
+            <Input value={joinCode} onChange={(e) => setJoinCode(cleanJoinCode(e.target.value))} placeholder="e.g. A7K3M2" maxLength={6} className="flex-1 uppercase tracking-widest text-center font-bold" autoFocus />
             <Button variant="primary" onClick={handleJoin} loading={isJoining} disabled={joinCode.length < 6}>Join</Button>
           </div>
           {joinError && <p className="text-xs text-cin-red mt-2">{joinError}</p>}

@@ -285,8 +285,9 @@ test.describe('a signed-out player who opens a join link', () => {
     await expect(page).toHaveURL(/\/auth$/);
 
     await signUp(page, { name: 'Link User', email: `link${Date.now()}@test.com` });
-    // Stop the page's clock now, so verification's move-on timer can't fire before Next
-    await page.clock.pauseAt(await page.evaluate(() => Date.now()));
+    // Stop the page's clock just ahead of its own time (it keeps moving, and pausing in the past
+    // throws), well before verification's 1s move-on timer, so that timer can't fire before Next
+    await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 100);
     await page.getByText('[Dev] Skip verification').click();
     await expect(page).toHaveURL(/\/auth\/notifications/);
     // Straight away, as a quick player would: age verification must not bring them back here

@@ -6,6 +6,7 @@
  * still work when the router or app state is what broke.
  */
 
+import { useState } from 'react';
 import Logo from '../brand/Logo';
 import { Button } from '../ui';
 import useAuthStore from '../../context/authStore';
@@ -18,6 +19,7 @@ async function signOut() {
 export default function RecoveryScreen() {
   // Home is where "Go home" leads, so when Home itself is broken, signing out is the way back
   const onHome = window.location.pathname === '/';
+  const [signingOut, setSigningOut] = useState(false);
 
   return (
     <div className="min-h-dvh bg-cin-espresso px-5 flex flex-col items-center justify-center text-center animate-fade-in">
@@ -29,7 +31,7 @@ export default function RecoveryScreen() {
       <div className="w-full max-w-xs mt-8 flex flex-col gap-3">
         <Button onClick={() => window.location.reload()}>Try again</Button>
         {onHome
-          ? <Button variant="outline" onClick={signOut}>Sign out</Button>
+          ? <Button variant="outline" loading={signingOut} onClick={() => { setSigningOut(true); signOut(); }}>Sign out</Button>
           : <Button variant="outline" onClick={() => window.location.assign('/')}>Go home</Button>}
       </div>
     </div>

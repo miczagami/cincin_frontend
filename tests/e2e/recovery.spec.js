@@ -89,6 +89,22 @@ test.describe('recovery screen', () => {
     await expect(page).toHaveURL(/\/auth$/);
   });
 
+  test('Sign out still signs out when the server never answers', async ({ browser }) => {
+    const page = await signIn(browser, 'host@test.com');
+    await breakModule(page, '/src/pages/home/HomePage.jsx');
+    await page.route('**/api/auth/logout', () => {}); // never fulfilled
+    await page.goto('/');
+
+    await page.getByRole('button', { name: 'Sign out' }).click();
+    // Try again would reload and cancel the sign-out, so it waits too
+    await expect(page.getByRole('button', { name: 'Try again' })).toBeDisabled();
+
+    await expect(page).toHaveURL(/\/auth$/, { timeout: 10_000 });
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await page.goto('/');
+    await expect(page).toHaveURL(/\/auth$/);
+  });
+
   test('the render error is reported', async ({ page }) => {
     const reports = collectReports(page);
     await openBrokenForgotPassword(page);

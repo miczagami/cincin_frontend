@@ -118,8 +118,6 @@ export async function initPushNotifications() {
     // Listen for foreground messages
     setupForegroundListener();
 
-    // Listen for notification clicks from service worker
-    setupClickListener();
 
     console.log("[Push] Initialised successfully");
     return true;
@@ -317,22 +315,3 @@ function setupForegroundListener() {
   });
 }
 
-/**
- * Listen for notification click messages from the service worker.
- * The SW sends a postMessage when a notification is clicked.
- */
-function setupClickListener() {
-  navigator.serviceWorker.addEventListener("message", (event) => {
-    if (event.data?.type === "NOTIFICATION_CLICK") {
-      const { url, payload } = event.data;
-      console.log("[Push] Notification click → navigating to:", url);
-
-      // Use React Router navigation if available
-      if (window.__ROUTER_NAVIGATE__) {
-        window.__ROUTER_NAVIGATE__(url);
-      } else {
-        window.location.href = url;
-      }
-    }
-  });
-}

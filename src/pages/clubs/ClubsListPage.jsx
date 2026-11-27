@@ -77,7 +77,7 @@ export default function ClubsListPage() {
         <Card className="mb-6">
           <p className="text-xs text-cin-muted mb-2">Enter invite code</p>
           <div className="flex gap-2">
-            <Input value={joinCode} onChange={(e) => setJoinCode(cleanJoinCode(e.target.value))} placeholder="e.g. A7K3M2" maxLength={6} className="flex-1 uppercase tracking-widest text-center font-bold" autoFocus />
+            <Input value={joinCode} onChange={(e) => setJoinCode(cleanJoinCode(e.target.value))} placeholder="e.g. A7K3M2" className="flex-1 uppercase tracking-widest text-center font-bold" autoFocus />
             <Button variant="primary" onClick={handleJoin} loading={isJoining} disabled={joinCode.length < 6}>Join</Button>
           </div>
           {joinError && <p className="text-xs text-cin-red mt-2">{joinError}</p>}

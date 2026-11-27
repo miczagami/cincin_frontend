@@ -124,15 +124,15 @@ export default function SeasonEndPage() {
 
   // The season these results are for: the one just ended here, or the one a link named
   const shownSeason = seasonData?.season;
-  // What's next is the admin's call only while this was the club's last season: none newer is running
-  const canChooseNext = isAdmin && shownSeason?.status === 'ENDED'
-    && (!activeClub?.currentSeason || activeClub.currentSeason.id === shownSeason.id);
+  // What's next is the admin's call only while this was the club's last season: none newer is
+  // running. Judged on this club, once loaded (the store can still hold another).
+  const canChooseNext = activeClub?.id === clubId && isAdmin && shownSeason?.status === 'ENDED'
+    && (!activeClub.currentSeason || activeClub.currentSeason.id === shownSeason.id);
 
   const handleNewSeason = async (config) => {
-    const lastSeason = shownSeason ?? activeClub?.currentSeason;
     const data = config || {
-      seasonType: lastSeason?.seasonType || 'FIXED_LENGTH',
-      lengthDays: lastSeason?.lengthDays ?? 90,
+      seasonType: shownSeason?.seasonType || 'FIXED_LENGTH',
+      lengthDays: shownSeason?.lengthDays ?? 90,
     };
     const result = await startNewSeason(clubId, data);
     if (result.success) {

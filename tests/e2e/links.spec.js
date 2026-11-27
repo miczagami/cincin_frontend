@@ -63,8 +63,8 @@ function api(page, method, apiPath, body) {
 }
 
 /** A new club of the host's (a Pro player) whose first season has ended, as a "season ended" notice follows. */
-async function clubWithEndedSeason(page) {
-  const club = await api(page, 'POST', '/clubs', { name: `Links Club ${Date.now()}`, seasonType: 'ROLLING' });
+async function clubWithEndedSeason(page, seasonSettings = { seasonType: 'ROLLING' }) {
+  const club = await api(page, 'POST', '/clubs', { name: `Links Club ${Date.now()}`, ...seasonSettings });
   const [season] = club.seasons;
   await api(page, 'POST', `/clubs/${club.id}/seasons/${season.id}/end`);
   return { club, seasonId: season.id };
@@ -158,6 +158,45 @@ test("from a season's link, a new season with the same settings keeps that seaso
   expect(after.activeSeason.seasonType).toBe('ROLLING');
 });
 
+test("from a season's link, a new season with the same settings keeps a fixed season's length", async ({ browser }) => {
+  const page = await signIn(browser, 'host@test.com');
+  const { club, seasonId } = await clubWithEndedSeason(page, { seasonType: 'FIXED_LENGTH', seasonLengthDays: 30 });
+  await page.goto(appPaths.seasonResults({ clubId: club.id, seasonId }));
+
+  await page.getByRole('button', { name: "What's Next?" }).click();
+  await page.getByText('New Season (Same Settings)').click();
+
+  await expect(page).toHaveURL((url) => url.pathname === `/clubs/${club.id}`);
+  const after = await api(page, 'GET', `/clubs/${club.id}`);
+  expect(after.activeSeason).toMatchObject({ seasonType: 'FIXED_LENGTH', lengthDays: 30 });
+});
+
+test('the admin who ends a season on its screen goes on to choose what comes next', async ({ browser }) => {
+  const page = await signIn(browser, 'host@test.com');
+  const club = await api(page, 'POST', '/clubs', { name: `Ending Club ${Date.now()}`, seasonType: 'ROLLING' });
+  await page.goto(`/clubs/${club.id}/season-end`);
+
+  await page.getByRole('button', { name: 'End Season' }).click();
+
+  await expect(heading(page, 'Season Complete! 🏆')).toBeVisible();
+  await expect(page.getByRole('button', { name: "What's Next?" })).toBeVisible();
+});
+
+test("a season link opened from another club's screen judges the linked club, not the one already loaded", async ({ browser }) => {
+  const page = await signIn(browser, 'host@test.com');
+  const { club, seasonId } = await clubWithEndedSeason(page);
+  const seeded = await seededClub(page); // the host's other club, with a season running
+  await page.goto(`/clubs/${seeded.id}`);
+  await expect(heading(page, seeded.name)).toBeVisible();
+
+  // Move within the app (as a tap on an in-app notification would), keeping the loaded club
+  await page.evaluate((link) => { window.history.pushState({}, '', link); window.dispatchEvent(new PopStateEvent('popstate')); },
+    appPaths.seasonResults({ clubId: club.id, seasonId }));
+
+  await expect(heading(page, 'Season Complete! 🏆')).toBeVisible();
+  await expect(page.getByRole('button', { name: "What's Next?" })).toBeVisible();
+});
+
 test('join codes in links are cleaned, and a malformed one is ignored', async ({ browser }) => {
   const page = await signIn(browser, 'player3@test.com');
   const codeField = page.getByPlaceholder('e.g. A7K3M2');
@@ -171,6 +210,20 @@ test('join codes in links are cleaned, and a malformed one is ignored', async ({
   await page.goto(appPaths.clubJoin({ inviteCode: 'FNV0019999' })); // too long: not a code
   await expect(page.getByRole('heading', { name: 'Cellar Clubs' })).toBeVisible();
   await expect(codeField).toHaveCount(0);
+});
+
+test('a code pasted into the club join form is cleaned whole, as on the game join screen', async ({ browser }) => {
+  const page = await signIn(browser, 'player3@test.com');
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/clubs');
+  await page.getByRole('button', { name: 'Join Club' }).click();
+  const codeField = page.getByPlaceholder('e.g. A7K3M2');
+
+  await page.evaluate(() => navigator.clipboard.writeText('  fnv-001  '));
+  await codeField.focus();
+  await page.keyboard.press('ControlOrMeta+V');
+
+  await expect(codeField).toHaveValue('FNV001');
 });
 
 test('leaving a club invite for the Clubs tab closes its join form', async ({ browser }) => {
@@ -232,8 +285,8 @@ test.describe('a signed-out player who opens a join link', () => {
     await expect(page).toHaveURL(/\/auth$/);
 
     await signUp(page, { name: 'Link User', email: `link${Date.now()}@test.com` });
-    // Stop the page's clock just ahead of verification's move-on delay, so it can't fire before Next
-    await page.clock.pauseAt(Date.now() + 500);
+    // Stop the page's clock now, so verification's move-on timer can't fire before Next
+    await page.clock.pauseAt(await page.evaluate(() => Date.now()));
     await page.getByText('[Dev] Skip verification').click();
     await expect(page).toHaveURL(/\/auth\/notifications/);
     // Straight away, as a quick player would: age verification must not bring them back here

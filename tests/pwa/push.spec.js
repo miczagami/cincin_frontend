@@ -385,4 +385,10 @@ test("a season-ending notification opens its club's screen; a season-ended one, 
   }));
   // Shown by the worker from data alone, so the tap works out the screen from the type
   expect((await tapNotification(context, 'view')).opened).toEqual([`${baseURL}/clubs/club%201/season-end/s%2F1`]);
+
+  // A game waiting for the admin's approval opens the club, where they approve it
+  await appWorker(context).evaluate(() => self.registration.showNotification('Game to approve', {
+    data: { type: 'club_game_submitted', clubId: 'club-1' },
+  }));
+  expect((await tapNotification(context, 'view')).opened).toEqual([`${baseURL}/clubs/club-1`]);
 });

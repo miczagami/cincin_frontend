@@ -123,7 +123,8 @@ function appPathFor(data) {
     case 'season_ended': // that season's final standings and awards
       if (data.clubId && data.seasonId) return `/clubs/${encodeURIComponent(data.clubId)}/season-end/${encodeURIComponent(data.seasonId)}`;
       // without a season, its club
-    case 'club_game_approved': // eslint-disable-line no-fallthrough
+    case 'club_game_submitted': // eslint-disable-line no-fallthrough
+    case 'club_game_approved':
     case 'club_game_rejected':
     case 'club_member_joined':
     case 'club_approval':

@@ -16,17 +16,19 @@ async function signOut() {
 }
 
 export default function RecoveryScreen() {
+  // Home is where "Go home" leads, so when Home itself is broken, signing out is the way back
+  const onHome = window.location.pathname === '/';
+
   return (
     <div className="min-h-dvh bg-cin-espresso px-5 flex flex-col items-center justify-center text-center animate-fade-in">
       <Logo variant="mark" width={64} aria-hidden="true" />
       <h1 className="font-display font-bold text-xl text-cin-cream mt-6">Something went wrong</h1>
       <p className="text-sm text-cin-muted font-body mt-2 max-w-xs">
-        This screen couldn't load. Try again, or head back home.
+        This screen couldn't load. {onHome ? 'Try again, or sign out and back in.' : 'Try again, or head back home.'}
       </p>
       <div className="w-full max-w-xs mt-8 flex flex-col gap-3">
         <Button onClick={() => window.location.reload()}>Try again</Button>
-        {/* Home is where "Go home" leads, so when Home itself is broken, signing out is the way back */}
-        {window.location.pathname === '/'
+        {onHome
           ? <Button variant="outline" onClick={signOut}>Sign out</Button>
           : <Button variant="outline" onClick={() => window.location.assign('/')}>Go home</Button>}
       </div>

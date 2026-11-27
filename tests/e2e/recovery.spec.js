@@ -41,6 +41,7 @@ test.describe('recovery screen', () => {
     await expect(recoveryScreen(page)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Go home' })).toBeVisible();
+    await expect(page.getByText('Try again, or head back home.')).toBeVisible();
     await expect(page.getByText(RENDER_ERROR)).toHaveCount(0);
     await expect(page.getByText('Unexpected Application Error')).toHaveCount(0);
   });
@@ -59,6 +60,9 @@ test.describe('recovery screen', () => {
     await breakModule(page, '/src/pages/home/HomePage.jsx');
     await page.goto('/');
     await expect(recoveryScreen(page)).toBeVisible();
+    // The explanation names the way back this screen actually offers
+    await expect(page.getByText('Try again, or sign out and back in.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Go home' })).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Sign out' }).click();
     await expect(page).toHaveURL(/\/auth$/);

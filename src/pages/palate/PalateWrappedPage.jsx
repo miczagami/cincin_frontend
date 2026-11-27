@@ -226,6 +226,19 @@ async function canvasToBlob(canvas) {
   });
 }
 
+/** The words a Palate Wrapped share sends, from the fields the API returns (no link). */
+function wrappedShareText(wrapped) {
+  const accuracy = wrapped.overallAccuracy ?? wrapped.overall?.overallAccuracy;
+  const topFlavour = wrapped.topFlavourHit?.category ?? wrapped.strengths?.[0]?.category;
+  const parts = [
+    '🍷 My CinCin Palate Profile:',
+    accuracy != null ? `${accuracy}% accuracy across ${wrapped.gamesPlayed} games.` : `${wrapped.gamesPlayed} games played.`,
+    topFlavour ? `Top flavour: ${topFlavour}.` : null,
+    'Check out CinCin!',
+  ];
+  return parts.filter(Boolean).join(' ');
+}
+
 export default function PalateWrappedPage() {
   const navigate = useNavigate();
   const {
@@ -285,7 +298,8 @@ export default function PalateWrappedPage() {
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           title: 'My CinCin Palate DNA',
-          text: `🍷 ${wrapped.overall?.overallAccuracy}% accuracy across ${wrapped.gamesPlayed} games. Check out CinCin!`,
+          // The link rides in the caption: share targets often drop a url sent with files
+          text: `${wrappedShareText(wrapped)} ${SHARE_URL}`,
           files: [file],
         });
         setShareSuccess('shared');
@@ -293,7 +307,7 @@ export default function PalateWrappedPage() {
         // Fallback: share without image (text only)
         await navigator.share({
           title: 'My CinCin Palate DNA',
-          text: `🍷 My CinCin Palate Profile: ${wrapped.overall?.overallAccuracy}% accuracy across ${wrapped.gamesPlayed} games. Top strength: ${wrapped.strengths?.[0]?.category}. Check out CinCin!`,
+          text: wrappedShareText(wrapped),
           url: SHARE_URL,
         });
         setShareSuccess('shared');
@@ -321,9 +335,7 @@ export default function PalateWrappedPage() {
 
   // ── Copy link fallback ──
   const handleCopyLink = useCallback(() => {
-    const text = wrapped
-      ? `🍷 My CinCin Palate Profile: ${wrapped.overall?.overallAccuracy}% accuracy across ${wrapped.gamesPlayed} games. Top strength: ${wrapped.strengths?.[0]?.category}. Check out CinCin! ${SHARE_URL}`
-      : SHARE_URL;
+    const text = wrapped ? `${wrappedShareText(wrapped)} ${SHARE_URL}` : SHARE_URL;
     navigator.clipboard?.writeText(text);
     setShareSuccess('copied');
     setTimeout(() => setShareSuccess(null), 2000);

@@ -49,6 +49,7 @@ const SCREENS = {
   subscription: (page) => heading(page, 'Subscription'),
   subscriptionSuccess: (page) => heading(page, 'Subscription'),
   subscriptionCancel: (page) => heading(page, 'Subscription'),
+  subscriptionMockSuccess: (page) => heading(page, 'Subscription'),
   notifications: (page) => heading(page, 'Notifications'),
   settings: (page) => heading(page, 'Settings'),
   verifyEmail: (page) => heading(page, 'Verify Email'),

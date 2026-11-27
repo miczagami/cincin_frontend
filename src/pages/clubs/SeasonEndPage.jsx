@@ -182,7 +182,8 @@ export default function SeasonEndPage() {
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           title: `${activeClub?.name} Season Results`,
-          text: `🏆 ${lb[0]?.displayName} won with ${lb[0]?.totalScore} points!`,
+          // The link rides in the caption: share targets often drop a url sent with files
+          text: `🏆 ${lb[0]?.displayName} won with ${lb[0]?.totalScore} points! ${SHARE_URL}`,
           files: [file],
         });
         toast.success('Season results shared!');

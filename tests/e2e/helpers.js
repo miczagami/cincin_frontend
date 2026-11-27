@@ -28,17 +28,34 @@ export async function pickBottle(page) {
 
 /**
  * Without SendGrid the backend logs account emails as
- * "[Email Mock] → <to> | <subject> | <url>". Point BACKEND_LOG at its output to test emailed links.
+ * "[Email Mock] → user <userId> | <subject> | <url>", naming the user by ID, never by address.
+ * Point BACKEND_LOG at its output to test emailed links.
+ *
+ * Until the backend change that logs IDs (miczagami/cincin_backend#6) is on both repos' main
+ * branches, CI can pair this suite with a backend that still logs "[Email Mock] → <email> | …",
+ * so that form is matched too. Drop it once both have merged.
  */
-export async function emailedLink(to, path) {
+export async function emailedLink({ userId, email }, path) {
   const log = process.env.BACKEND_LOG;
+  const logPrefixes = [`[Email Mock] → user ${userId} `, `[Email Mock] → ${email} `];
   for (let i = 0; i < 40; i++) {
     const line = fs.readFileSync(log, 'utf8').split('\n').reverse()
-      .find((l) => l.includes(`[Email Mock] → ${to} `) && l.includes(path));
-    if (line) return new URL(line.split(' | ').pop().trim()).pathname + new URL(line.split(' | ').pop().trim()).search;
+      .find((l) => logPrefixes.some((prefix) => l.includes(prefix)) && l.includes(path));
+    if (line) {
+      const url = new URL(line.split(' | ').pop().trim());
+      return url.pathname + url.search;
+    }
     await new Promise((r) => setTimeout(r, 250));
   }
-  throw new Error(`no ${path} email logged for ${to}`);
+  throw new Error(`no ${path} email logged for user ${userId}`);
+}
+
+/** The signed-in user's ID, read from the app's auth store. */
+export async function currentUserId(page) {
+  return page.evaluate(async () => {
+    const { default: useAuthStore } = await import('/src/context/authStore.js');
+    return useAuthStore.getState().user.id;
+  });
 }
 
 export async function signUp(page, { name, email }) {

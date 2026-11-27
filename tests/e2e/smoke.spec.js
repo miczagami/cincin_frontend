@@ -4,7 +4,7 @@
  * against a freshly seeded database — see tests/e2e/README.md.
  */
 import { test, expect } from '@playwright/test';
-import { signIn, signUp, pickBottle, emailedLink, PASSWORD } from './helpers';
+import { signIn, signUp, pickBottle, emailedLink, currentUserId, PASSWORD } from './helpers';
 
 test('login survives a page reload', async ({ browser }) => {
   const page = await signIn(browser, 'host@test.com');
@@ -52,6 +52,7 @@ test.describe('emailed links', () => {
     await signUp(page, { name: 'Verify Me', email });
     await page.getByText('[Dev] Skip verification').click();
     await expect(page).toHaveURL(/\/auth\/notifications/);
+    const userId = await currentUserId(page);
 
     await test.step('Settings offers verification while unverified', async () => {
       await page.goto('/settings');
@@ -59,7 +60,7 @@ test.describe('emailed links', () => {
     });
 
     await test.step('the emailed link verifies the account and unlocks clubs', async () => {
-      await page.goto(await emailedLink(email, '/auth/verify-email'));
+      await page.goto(await emailedLink({ userId, email }, '/auth/verify-email'));
       await expect(page.getByText('Email verified')).toBeVisible();
       await page.goto('/clubs/create');
       await expect(page.getByText('Verify your email to create')).toHaveCount(0);
@@ -70,7 +71,7 @@ test.describe('emailed links', () => {
       await page.goto('/auth/forgot-password');
       await page.locator('input').first().fill(email);
       await page.getByRole('button', { name: /send|reset/i }).first().click();
-      await page.goto(await emailedLink(email, '/auth/forgot-password'));
+      await page.goto(await emailedLink({ userId, email }, '/auth/forgot-password'));
       const fields = page.locator('input[type="password"]');
       await fields.nth(0).fill('NewPass123');
       await fields.nth(1).fill('NewPass123');

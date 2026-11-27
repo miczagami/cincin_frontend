@@ -29,7 +29,9 @@ export default defineConfig({
   },
   projects: [
     { name: 'smoke', testDir: './tests/e2e', use: { baseURL: 'http://localhost:3000' } },
-    { name: 'pwa', testDir: './tests/pwa', use: { baseURL: 'http://localhost:4173' } },
+    // Full Chromium (new headless): the default headless shell reports notification permission as
+    // "denied" even after it's granted, so the app would never set up push
+    { name: 'pwa', testDir: './tests/pwa', use: { baseURL: 'http://localhost:4173', channel: 'chromium' } },
   ],
   // Both servers proxy /api and /socket.io to the backend on :4000.
   // The backend itself must already be running against a seeded database.

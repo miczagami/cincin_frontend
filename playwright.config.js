@@ -46,7 +46,8 @@ export default defineConfig({
       command: `npx vite build --outDir ${PWA_OUT_DIR} && npx vite preview --outDir ${PWA_OUT_DIR} --port 4173 --strictPort`,
       url: 'http://localhost:4173',
       env: PWA_FIREBASE_ENV,
-      reuseExistingServer: !process.env.CI,
+      // Always a fresh build: reusing a server already on :4173 would test whatever it serves
+      reuseExistingServer: false,
       timeout: 180_000,
     },
   ],

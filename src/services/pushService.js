@@ -24,24 +24,13 @@
 import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage, isSupported } from "firebase/messaging";
 import { notifications } from "./api";
-
-// ─── Firebase Config ───
-// Public project identifiers, baked in at build time from the VITE_FIREBASE_* variables.
-// The service worker (src/sw.js) reads the same variables.
-const FIREBASE_CONFIG = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-};
+import { firebaseConfig, firebaseConfigured } from "./firebaseConfig";
 
 // VAPID key for web push (from Firebase Console → Cloud Messaging → Web Push certificates)
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
 // Push needs a Firebase project configured at build time
-const FIREBASE_CONFIGURED = Object.values(FIREBASE_CONFIG).every(Boolean) && Boolean(VAPID_KEY);
+const FIREBASE_CONFIGURED = firebaseConfigured && Boolean(VAPID_KEY);
 
 // ─── Singleton state ───
 let _app = null;
@@ -55,7 +44,10 @@ let _onForegroundMessage = null; // Callback for foreground messages
  */
 export async function isPushSupported() {
   try {
-    if (!FIREBASE_CONFIGURED) return false;
+    if (!FIREBASE_CONFIGURED) {
+      console.info("[Push] Off: no Firebase project configured at build time");
+      return false;
+    }
 
     // Check Firebase-level support
     const firebaseSupported = await isSupported();
@@ -99,7 +91,7 @@ export async function initPushNotifications() {
     }
 
     // Initialise Firebase
-    _app = initializeApp(FIREBASE_CONFIG);
+    _app = initializeApp(firebaseConfig);
     _messaging = getMessaging(_app);
 
     // Push arrives through the app's own service worker (src/sw.js)

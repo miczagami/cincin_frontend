@@ -8,7 +8,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { test, expect } from '@playwright/test';
 import { signIn } from '../e2e/helpers';
 import { PWA_FIREBASE_ENV, PWA_OUT_DIR } from '../../playwright.config.js';
@@ -78,20 +78,58 @@ test('the build ships the Firebase config from its build variables, and no place
   expect(scripts.filter((file) => PLACEHOLDERS.test(file.text)).map((file) => file.name)).toEqual([]);
 });
 
-test('a build without Firebase config ships no placeholders', () => {
-  test.setTimeout(180_000);
+test.describe('a build without Firebase config', () => {
   const outDir = 'dist-pwa-unconfigured';
-  const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('VITE_FIREBASE_')));
-  execFileSync('npx', ['vite', 'build', '--outDir', outDir], { env, stdio: 'ignore' });
+  const port = 4174;
 
-  expect(builtScripts(outDir).filter((file) => PLACEHOLDERS.test(file.text)).map((file) => file.name)).toEqual([]);
+  test.beforeAll(() => {
+    test.setTimeout(180_000);
+    const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('VITE_FIREBASE_')));
+    execFileSync('npx', ['vite', 'build', '--outDir', outDir], { env, stdio: 'ignore' });
+  });
+
+  test('ships no placeholders', () => {
+    expect(builtScripts(outDir).filter((file) => PLACEHOLDERS.test(file.text)).map((file) => file.name)).toEqual([]);
+  });
+
+  test('runs with push turned off, and its worker still serves the app', async ({ browser, request }) => {
+    const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--outDir', outDir, '--port', String(port), '--strictPort'], { stdio: 'ignore' });
+    try {
+      const origin = `http://localhost:${port}`;
+      await expect.poll(() => request.get(origin).then((r) => r.ok(), () => false), { timeout: 20_000 }).toBe(true);
+      const login = await (await request.post(`${origin}/api/auth/login`, { data: { email: 'host@test.com', password: 'TestPass1' } })).json();
+      const context = await browser.newContext({ baseURL: origin });
+      await context.grantPermissions(['notifications']);
+      await context.addInitScript(({ accessToken, refreshToken }) => {
+        sessionStorage.setItem('cin_access_token', accessToken);
+        sessionStorage.setItem('cin_refresh_token', refreshToken);
+      }, login);
+      const page = await context.newPage();
+      const pushOutcome = page.waitForEvent('console', { predicate: (msg) => msg.text().startsWith('[Push]'), timeout: 20_000 });
+
+      await page.goto('/');
+
+      expect((await pushOutcome).text()).toBe('[Push] Off: no Firebase project configured at build time');
+      expect(await controllingWorker(page)).toBe('/sw.js');
+      await context.close();
+    } finally {
+      server.kill();
+    }
+  });
 });
 
-/** The worker's notifications, as its registration reports them. */
+/** The app's service worker, as the browser context sees it. */
+function appWorker(context) {
+  return context.serviceWorkers().find((w) => w.url().endsWith('/sw.js'));
+}
+
+/**
+ * The worker's notifications, as its registration reports them: `link` is where the Firebase SDK
+ * opens a notification it showed, `url` where the worker opens one it showed itself.
+ */
 async function shownNotifications(context) {
-  const worker = context.serviceWorkers().find((w) => w.url().endsWith('/sw.js'));
-  return worker.evaluate(async () => (await self.registration.getNotifications())
-    .map((n) => ({ title: n.title, body: n.body, icon: n.icon, link: n.data?.FCM_MSG?.fcmOptions?.link })));
+  return appWorker(context).evaluate(async () => (await self.registration.getNotifications())
+    .map((n) => ({ title: n.title, body: n.body, icon: n.icon, link: n.data?.FCM_MSG?.fcmOptions?.link, url: n.data?.url })));
 }
 
 /** Close the app, then deliver a push the way the browser's push service would. */
@@ -109,7 +147,7 @@ async function closeAppAndPush(page, baseURL, message) {
   await cdp.send('ServiceWorker.enable');
   await page.close();
   // The app counts as closed once its worker sees no window (Firebase hands a push to an open app instead)
-  const worker = context.serviceWorkers().find((w) => w.url().endsWith('/sw.js'));
+  const worker = appWorker(context);
   await expect.poll(() => worker.evaluate(async () => (await self.clients.matchAll({ type: 'window', includeUncontrolled: true })).length)).toBe(0);
 
   await cdp.send('ServiceWorker.deliverPushMessage', {
@@ -153,9 +191,7 @@ test('a data-only push shows its own notification, with the app icon and the scr
   await expect.poll(() => shownNotifications(context)).toEqual([
     expect.objectContaining({ title: 'Palate updated', body: 'Your profile has new notes' }),
   ]);
-  const worker = context.serviceWorkers().find((w) => w.url().endsWith('/sw.js'));
-  const [shown] = await worker.evaluate(async () => (await self.registration.getNotifications())
-    .map((n) => ({ icon: n.icon, url: n.data?.url })));
+  const [shown] = await shownNotifications(context);
   expect(shown.url).toBe('/palate/profile');
   const iconResponse = await devtoolsTab.request.get(shown.icon);
   expect(iconResponse.headers()['content-type']).toContain('image/png');
@@ -167,7 +203,7 @@ test('a data-only push shows its own notification, with the app icon and the scr
  * the click event inside the worker and records clients.openWindow instead of opening one.
  */
 async function tapNotification(context, action = '') {
-  const worker = context.serviceWorkers().find((w) => w.url().endsWith('/sw.js'));
+  const worker = appWorker(context);
   return worker.evaluate(async (tapAction) => {
     const [notification] = await self.registration.getNotifications();
     const opened = [];
@@ -273,7 +309,7 @@ test('a tap opens its screen even when the open app tab is one the worker does n
   await cdp.send('Network.setBypassServiceWorker', { bypass: true });
   await page.reload();
   expect(await page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(false);
-  const worker = context.serviceWorkers().find((w) => w.url().endsWith('/sw.js'));
+  const worker = appWorker(context);
   await worker.evaluate(() => self.registration.showNotification('Palate updated', {
     data: { type: 'palate_updated', url: '/palate/profile' },
   }));
@@ -281,4 +317,41 @@ test('a tap opens its screen even when the open app tab is one the worker does n
   const { opened } = await tapNotification(context);
 
   expect(opened).toEqual([`${baseURL}/palate/profile`]);
+});
+
+test('a plain tap on a push the backend sent opens the app at its link', async ({ browser, baseURL }) => {
+  test.setTimeout(90_000);
+  const page = await signInWithPushAllowed(browser);
+  const context = page.context();
+  // The backend's push carries a notification block, so the Firebase SDK shows it and handles the tap
+  const link = `${baseURL}/game/join?code=ABC123`;
+  await closeAppAndPush(page, baseURL, {
+    notification: { title: 'Game invite', body: 'Sam invited you to a game', icon: '/icon-192.png' },
+    data: { type: 'game_invite', gameCode: 'ABC123' },
+    fcmOptions: { link },
+  });
+  await expect.poll(() => shownNotifications(context)).toHaveLength(1);
+
+  const { opened, stillShown } = await tapNotification(context);
+
+  expect(opened).toEqual([link]);
+  expect(stillShown).toBe(0);
+});
+
+test('a tap while the app is open takes the open app to its screen', async ({ browser }) => {
+  const page = await signInWithPushAllowed(browser);
+  const context = page.context();
+  await expect.poll(() => controllingWorker(page)).toBe('/sw.js');
+  await expect(page).not.toHaveURL(/\/palate\/profile/);
+  const worker = appWorker(context);
+  await worker.evaluate(() => {
+    // Only a real tap lets the worker focus a window; the test's script-made tap can't
+    WindowClient.prototype.focus = async function focus() { return this; };
+    return self.registration.showNotification('Palate updated', { data: { type: 'palate_updated', url: '/palate/profile' } });
+  });
+
+  const { opened } = await tapNotification(context);
+
+  expect(opened).toEqual([]);
+  await expect(page).toHaveURL(/\/palate\/profile$/);
 });

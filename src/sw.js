@@ -1,7 +1,8 @@
 /**
  * The app's one service worker: offline caching (Workbox) and background push
  * (Firebase Cloud Messaging). Vite builds it (vite-plugin-pwa injectManifest), so
- * the Firebase config comes from the VITE_FIREBASE_* build variables.
+ * the Firebase config comes from the VITE_FIREBASE_* build variables
+ * (services/firebaseConfig.js, shared with the page).
  *
  * Push messages the backend sends carry a `notification` block; the Firebase SDK
  * shows those itself and opens their link when tapped. Data-only messages are
@@ -17,6 +18,7 @@ import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { clientsClaim } from 'workbox-core';
 import { initializeApp } from 'firebase/app';
 import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw';
+import { firebaseConfig, firebaseConfigured } from './services/firebaseConfig';
 
 // ─── Offline caching ───
 
@@ -65,17 +67,8 @@ registerRoute(/\.(?:png|jpg|jpeg|svg|gif|webp)$/, new CacheFirst({
 
 // ─── Background push ───
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-};
-
 // Without a Firebase project configured at build time, the app has no push
-if (Object.values(firebaseConfig).every(Boolean)) {
+if (firebaseConfigured) {
   const messaging = getMessaging(initializeApp(firebaseConfig));
 
   onBackgroundMessage(messaging, (payload) => {

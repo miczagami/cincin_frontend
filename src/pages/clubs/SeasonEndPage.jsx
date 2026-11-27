@@ -15,7 +15,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import useClubStore from '../../context/clubStore';
 import useAuthStore from '../../context/authStore';
 import useToast from '../../hooks/useToast';
-import { ScreenHeader, Button, Card } from '../../components/ui';
+import { ScreenHeader, Button, Card, Spinner } from '../../components/ui';
 import { renderSeasonCard, canvasToBlob } from '../../utils/canvasCards';
 
 const SEASON_TYPES = [
@@ -82,12 +82,13 @@ function SeasonConfigOverlay({ onConfirm, onClose }) {
 
 export default function SeasonEndPage() {
   const navigate = useNavigate();
-  const { clubId } = useParams();
+  // With a season in the path (a "season ended" link), this shows that season's results
+  const { clubId, seasonId } = useParams();
   const user = useAuthStore((s) => s.user);
-  const { activeClub, leaderboard, isLoading, loadClub, endSeason, startNewSeason, archiveClub } = useClubStore();
+  const { activeClub, leaderboard, isLoading, loadClub, endSeason, startNewSeason, archiveClub, fetchSeasonResults } = useClubStore();
   const toast = useToast();
 
-  const [phase, setPhase] = useState('confirm');
+  const [phase, setPhase] = useState(seasonId ? 'loading' : 'confirm');
   const [seasonData, setSeasonData] = useState(null);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [showModifyConfig, setShowModifyConfig] = useState(false);
@@ -95,7 +96,20 @@ export default function SeasonEndPage() {
   const canvasRef = useRef(null);
   const isAdmin = activeClub?.role === 'ADMIN' || activeClub?.adminId === user?.id;
 
-  useEffect(() => { if (!activeClub) loadClub(clubId); }, [clubId, activeClub]);
+  useEffect(() => { if (activeClub?.id !== clubId) loadClub(clubId); }, [clubId, activeClub]);
+
+  useEffect(() => {
+    if (!seasonId) return undefined;
+    let cancelled = false;
+    fetchSeasonResults(clubId, seasonId).then((results) => {
+      if (cancelled) return;
+      if (!results) setPhase('missing');
+      // A season still running has no results yet: the club screen shows it
+      else if (results.season.status !== 'ENDED') navigate(`/clubs/${clubId}`, { replace: true });
+      else { setSeasonData(results); setPhase('celebration'); }
+    });
+    return () => { cancelled = true; };
+  }, [clubId, seasonId, fetchSeasonResults]);
 
   const handleEndSeason = async () => {
     const result = await endSeason(clubId);
@@ -108,10 +122,17 @@ export default function SeasonEndPage() {
     }
   };
 
+  // The season these results are for: the one just ended here, or the one a link named
+  const shownSeason = seasonData?.season;
+  // What's next is the admin's call only while this was the club's last season: none newer is
+  // running. Judged on this club, once loaded (the store can still hold another).
+  const canChooseNext = activeClub?.id === clubId && isAdmin && shownSeason?.status === 'ENDED'
+    && (!activeClub.currentSeason || activeClub.currentSeason.id === shownSeason.id);
+
   const handleNewSeason = async (config) => {
     const data = config || {
-      seasonType: activeClub?.currentSeason?.seasonType || 'FIXED_LENGTH',
-      lengthDays: 90,
+      seasonType: shownSeason?.seasonType || 'FIXED_LENGTH',
+      lengthDays: shownSeason?.lengthDays ?? 90,
     };
     const result = await startNewSeason(clubId, data);
     if (result.success) {
@@ -148,7 +169,7 @@ export default function SeasonEndPage() {
     try {
       renderSeasonCard(canvasRef.current, {
         clubName: activeClub?.name,
-        seasonLabel: `Season ${activeClub?.currentSeason?.seasonNumber || ''} Complete`,
+        seasonLabel: `${shownSeason?.name || 'Season'} Complete`,
         champion: lb[0],
         awards: seasonData?.awards || [],
         standings: lb,
@@ -212,6 +233,22 @@ export default function SeasonEndPage() {
     );
   }
 
+  if (phase === 'loading') {
+    return <div className="min-h-dvh bg-cin-espresso flex items-center justify-center"><Spinner size={32} /></div>;
+  }
+
+  if (phase === 'missing') {
+    return (
+      <div className="min-h-dvh bg-cin-espresso px-5 pt-5 pb-8">
+        <ScreenHeader title="Season Results" onBack={() => navigate(`/clubs/${clubId}`)} />
+        <Card className="mt-6 text-center">
+          <p className="text-sm text-cin-muted">We couldn't find that season's results.</p>
+          <Button variant="primary" className="w-full mt-4" onClick={() => navigate(`/clubs/${clubId}`)}>Back to Club</Button>
+        </Card>
+      </div>
+    );
+  }
+
   // Phase: celebration (after season ended, show results)
   if (phase === 'celebration') {
     const lb = seasonData?.leaderboard || leaderboard;
@@ -257,7 +294,7 @@ export default function SeasonEndPage() {
           {isSharing ? 'Generating…' : 'Share Results as Image'}
         </Button>
 
-        {isAdmin ? (
+        {canChooseNext ? (
           <Button variant="primary" className="w-full mt-3" onClick={() => setPhase('decision')}>
             What's Next?
           </Button>

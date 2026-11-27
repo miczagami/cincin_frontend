@@ -372,3 +372,23 @@ test('a tap while the app is open takes the open app to its screen', async ({ br
   expect(opened).toEqual([]);
   await expect(page).toHaveURL(/\/palate\/profile$/);
 });
+
+test("a season-ending notification opens its club's screen; a season-ended one, that season's results", async ({ browser, baseURL }) => {
+  const page = await signInWithPushAllowed(browser);
+  const context = page.context();
+  await closeAppAndPush(page, baseURL, { data: { type: 'season_ending', title: 'Season ends soon', clubId: 'club-1', seasonId: 's-1' } });
+  await expect.poll(() => shownNotifications(context)).toHaveLength(1);
+  expect((await tapNotification(context)).opened).toEqual([`${baseURL}/clubs/club-1`]);
+
+  await appWorker(context).evaluate(() => self.registration.showNotification('Season over', {
+    data: { type: 'season_ended', clubId: 'club 1', seasonId: 's/1' },
+  }));
+  // Shown by the worker from data alone, so the tap works out the screen from the type
+  expect((await tapNotification(context, 'view')).opened).toEqual([`${baseURL}/clubs/club%201/season-end/s%2F1`]);
+
+  // A game waiting for the admin's approval opens the club, where they approve it
+  await appWorker(context).evaluate(() => self.registration.showNotification('Game to approve', {
+    data: { type: 'club_game_submitted', clubId: 'club-1' },
+  }));
+  expect((await tapNotification(context, 'view')).opened).toEqual([`${baseURL}/clubs/club-1`]);
+});

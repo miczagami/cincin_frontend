@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { Apple, Chrome } from 'lucide-react';
 import { Button, Input, ScreenHeader, Divider } from '../../components/ui';
 import useAuthStore from '../../context/authStore';
+import { takeReturnPath } from '../../services/returnPath';
 import useToast from '../../hooks/useToast';
 import Logo from '../../components/brand/Logo';
 
@@ -36,7 +37,7 @@ export default function LoginPage() {
     }
     const result = await login(email, password);
     if (result.success) {
-      navigate('/');
+      navigate(takeReturnPath(), { replace: true });
     } else {
       // Auth errors (wrong password, unverified) stay inline for clarity
       // Network/server errors go to toast
@@ -52,7 +53,7 @@ export default function LoginPage() {
   const handleSocial = async (provider) => {
     const result = await socialLogin(provider, 'PLACEHOLDER');
     if (result.success) {
-      navigate('/');
+      navigate(takeReturnPath(), { replace: true });
     } else {
       toast.error(result.error || `${provider} sign-in failed. Please try again.`);
     }

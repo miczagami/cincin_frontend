@@ -107,6 +107,11 @@ function PendingGameCard({ game, clubId, toast }) {
   );
 }
 
+/** The link that opens the app's club join screen with this club's invite code. */
+function clubInviteUrl(club) {
+  return `${window.location.origin}/clubs/join?code=${encodeURIComponent(club?.inviteCode ?? '')}`;
+}
+
 export default function ClubDetailPage() {
   const navigate = useNavigate();
   const { clubId } = useParams();
@@ -132,7 +137,7 @@ export default function ClubDetailPage() {
   }, [clubId]);
 
   const handleShare = useCallback(async () => {
-    const inviteUrl = `${window.location.origin}/game/join?code=${activeClub?.inviteCode}`;
+    const inviteUrl = clubInviteUrl(activeClub);
     const shareData = {
       title: `Join ${activeClub?.name} on CinCin`,
       text: `Join my Cellar Club on CinCin! Code: ${activeClub?.inviteCode}`,
@@ -154,7 +159,7 @@ export default function ClubDetailPage() {
   }, [activeClub, toast]);
 
   const handleCopyInvite = useCallback(async () => {
-    const inviteUrl = `${window.location.origin}/game/join?code=${activeClub?.inviteCode}`;
+    const inviteUrl = clubInviteUrl(activeClub);
     try {
       await navigator.clipboard.writeText(inviteUrl);
       toast.success('Invite link copied!');

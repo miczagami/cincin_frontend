@@ -120,15 +120,17 @@ function appPathFor(data) {
   switch (data.type) {
     case 'game_invite':
       return data.gameCode ? `/game/join?code=${encodeURIComponent(data.gameCode)}` : '/game/join';
+    case 'season_ended': // that season's final standings and awards
+      if (data.clubId && data.seasonId) return `/clubs/${encodeURIComponent(data.clubId)}/season-end/${encodeURIComponent(data.seasonId)}`;
+      // without a season, its club
+    case 'club_game_submitted': // eslint-disable-line no-fallthrough
     case 'club_game_approved':
     case 'club_game_rejected':
     case 'club_member_joined':
     case 'club_approval':
     case 'weekly_standings':
+    case 'season_ending': // the club screen shows the season that is ending
       return data.clubId ? `/clubs/${encodeURIComponent(data.clubId)}` : '/clubs';
-    case 'season_ending':
-    case 'season_ended':
-      return data.clubId ? `/clubs/${encodeURIComponent(data.clubId)}/season-end` : '/clubs';
     case 'palate_updated':
       return '/palate/profile';
     case 'monthly_palate_wrapped':

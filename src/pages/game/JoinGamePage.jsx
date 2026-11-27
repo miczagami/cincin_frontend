@@ -14,6 +14,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import useGameStore from '../../context/gameStore';
 import { ScreenHeader, Button, Input } from '../../components/ui';
+import { cleanJoinCode, joinCodeFromLink } from '../../utils/joinCode';
 
 export default function JoinGamePage() {
   const navigate = useNavigate();
@@ -26,10 +27,8 @@ export default function JoinGamePage() {
 
   // Auto-fill from URL param (deep link: /game/join?code=A7K3M2)
   useEffect(() => {
-    const urlCode = searchParams.get('code');
-    if (urlCode && urlCode.length === 6) {
-      setCode(urlCode.toUpperCase());
-    }
+    const urlCode = joinCodeFromLink(searchParams.get('code'));
+    if (urlCode) setCode(urlCode);
   }, [searchParams]);
 
   // Auto-focus input
@@ -38,15 +37,13 @@ export default function JoinGamePage() {
   }, []);
 
   const handleCodeChange = (e) => {
-    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
-    setCode(val);
+    setCode(cleanJoinCode(e.target.value));
     setJoinError(null);
   };
 
   const handlePaste = (e) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData('text').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
-    setCode(pasted);
+    setCode(cleanJoinCode(e.clipboardData.getData('text')));
     setJoinError(null);
   };
 

@@ -21,6 +21,9 @@ npx playwright install chromium   # first time only
 BACKEND_LOG=/tmp/cincin-backend.log npm run test:e2e
 ```
 
+`tests/e2e/links.spec.js` reads the backend's list of app links from its checkout: set
+`BACKEND_DIR`, or keep `cincin_backend` beside this repo.
+
 `BACKEND_LOG` is optional: without it the emailed-link test is skipped (the
 backend logs account emails there when SendGrid isn't configured).
 

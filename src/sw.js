@@ -93,17 +93,24 @@ if (Object.values(firebaseConfig).every(Boolean)) {
   });
 }
 
-// Tapping a notification shown above opens (or focuses) the app at its screen.
-// The Firebase SDK handles taps on the notifications it showed (they carry FCM_MSG).
+// Tapping a notification opens (or focuses) the app at its screen. The Firebase SDK handles a
+// plain tap on the notifications it showed (they carry FCM_MSG) but ignores their action
+// buttons, so those are handled here for every notification.
 self.addEventListener('notificationclick', (event) => {
-  const data = event.notification.data || {};
-  if (data.FCM_MSG) return;
+  const shown = event.notification.data || {};
+  const fromFirebase = Boolean(shown.FCM_MSG);
+  if (fromFirebase && !event.action) return;
+
   event.notification.close();
-  event.waitUntil(openApp(data.url || '/'));
+  if (event.action === 'dismiss') return;
+  const data = fromFirebase ? shown.FCM_MSG.data || {} : shown;
+  event.waitUntil(openApp(event.action ? appPathFor(data) : data.url || '/'));
 });
 
 async function openApp(path) {
-  const url = new URL(path, self.location.origin).href;
+  // Only the app: a link to another site opens the app's home instead
+  const target = new URL(path, self.location.origin);
+  const url = target.origin === self.location.origin ? target.href : new URL('/', self.location.origin).href;
   const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
   const open = windows.find((client) => 'focus' in client);
   if (open) {
@@ -123,10 +130,10 @@ function appPathFor(data) {
     case 'club_member_joined':
     case 'club_approval':
     case 'weekly_standings':
-      return data.clubId ? `/clubs/${data.clubId}` : '/clubs';
+      return data.clubId ? `/clubs/${encodeURIComponent(data.clubId)}` : '/clubs';
     case 'season_ending':
     case 'season_ended':
-      return data.clubId ? `/clubs/${data.clubId}/season-end` : '/clubs';
+      return data.clubId ? `/clubs/${encodeURIComponent(data.clubId)}/season-end` : '/clubs';
     case 'palate_updated':
       return '/palate/profile';
     case 'monthly_palate_wrapped':

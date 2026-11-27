@@ -215,12 +215,12 @@ export function getCurrentToken() {
 // ═══════════════════════════════════════════
 
 /**
- * The app's service worker registration (src/sw.js, registered by vite-plugin-pwa),
- * which also receives push. Null where none is registered (e.g. the dev server).
+ * The app's service worker registration (src/sw.js), which also receives push. A production
+ * build always registers it, but only once the page has loaded, so wait for it to be ready.
+ * The dev server has no worker: null.
  */
 async function appServiceWorker() {
-  const registration = await navigator.serviceWorker.getRegistration("/");
-  if (!registration) return null;
+  if (!import.meta.env.PROD) return null;
   return navigator.serviceWorker.ready;
 }
 

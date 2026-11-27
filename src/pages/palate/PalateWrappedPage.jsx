@@ -228,11 +228,10 @@ async function canvasToBlob(canvas) {
 
 /** The words a Palate Wrapped share sends, from the fields the API returns (no link). */
 function wrappedShareText(wrapped) {
-  const accuracy = wrapped.overallAccuracy ?? wrapped.overall?.overallAccuracy;
-  const topFlavour = wrapped.topFlavourHit?.category ?? wrapped.strengths?.[0]?.category;
+  const topFlavour = wrapped.topFlavourHit?.category;
   const parts = [
     '🍷 My CinCin Palate Profile:',
-    accuracy != null ? `${accuracy}% accuracy across ${wrapped.gamesPlayed} games.` : `${wrapped.gamesPlayed} games played.`,
+    `${wrapped.overallAccuracy}% accuracy across ${wrapped.gamesPlayed} games.`,
     topFlavour ? `Top flavour: ${topFlavour}.` : null,
     'Check out CinCin!',
   ];

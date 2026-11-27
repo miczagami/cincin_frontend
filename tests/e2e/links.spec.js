@@ -72,9 +72,7 @@ async function clubWithEndedSeason(page) {
 
 /** The seeded club the host runs ("Friday Night Vino", invite code FNV001). */
 async function seededClub(page) {
-  const clubs = await page.evaluate(async () => (await fetch('/api/clubs', {
-    headers: { Authorization: `Bearer ${sessionStorage.getItem('cin_access_token')}` },
-  })).json());
+  const clubs = await api(page, 'GET', '/clubs');
   const club = clubs.find((c) => c.name === 'Friday Night Vino');
   if (!club) throw new Error(`The seeded club is missing from /api/clubs: ${JSON.stringify(clubs).slice(0, 200)}`);
   return club;
@@ -114,6 +112,50 @@ test("a season-ended link shows that season's final standings, not the admin's e
   await expect(heading(page, 'Season Complete! 🏆')).toBeVisible();
   await expect(page.getByText('Final Standings')).toBeVisible();
   await expect(page.getByRole('button', { name: 'End Season' })).toHaveCount(0);
+});
+
+test("a season link that isn't a season says so", async ({ browser }) => {
+  const page = await signIn(browser, 'host@test.com');
+  const club = await seededClub(page);
+
+  await page.goto(appPaths.seasonResults({ clubId: club.id, seasonId: 'not-a-season' }));
+
+  await expect(page.getByText("We couldn't find that season's results.")).toBeVisible();
+});
+
+test('a season link for a season still running opens the club screen instead', async ({ browser }) => {
+  const page = await signIn(browser, 'host@test.com');
+  const club = await api(page, 'POST', '/clubs', { name: `Running Club ${Date.now()}`, seasonType: 'ROLLING' });
+
+  await page.goto(appPaths.seasonResults({ clubId: club.id, seasonId: club.seasons[0].id }));
+
+  await expect(page).toHaveURL((url) => url.pathname === `/clubs/${club.id}`);
+  await expect(heading(page, club.name)).toBeVisible();
+});
+
+test("an old season's link offers the admin no next-season choices once a newer season is running", async ({ browser }) => {
+  const page = await signIn(browser, 'host@test.com');
+  const { club, seasonId } = await clubWithEndedSeason(page);
+  await api(page, 'POST', `/clubs/${club.id}/seasons`, { seasonType: 'ROLLING' });
+
+  await page.goto(appPaths.seasonResults({ clubId: club.id, seasonId }));
+
+  await expect(heading(page, 'Season Complete! 🏆')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Back to Club' })).toBeVisible();
+  await expect(page.getByRole('button', { name: "What's Next?" })).toHaveCount(0);
+});
+
+test("from a season's link, a new season with the same settings keeps that season's type", async ({ browser }) => {
+  const page = await signIn(browser, 'host@test.com');
+  const { club, seasonId } = await clubWithEndedSeason(page); // a ROLLING season
+  await page.goto(appPaths.seasonResults({ clubId: club.id, seasonId }));
+
+  await page.getByRole('button', { name: "What's Next?" }).click();
+  await page.getByText('New Season (Same Settings)').click();
+
+  await expect(page).toHaveURL((url) => url.pathname === `/clubs/${club.id}`);
+  const after = await api(page, 'GET', `/clubs/${club.id}`);
+  expect(after.activeSeason.seasonType).toBe('ROLLING');
 });
 
 test('join codes in links are cleaned, and a malformed one is ignored', async ({ browser }) => {
@@ -183,13 +225,15 @@ test.describe('a signed-out player who opens a join link', () => {
   });
 
   test('lands on the join after signing up instead', async ({ page }) => {
-    // The test's clock: age verification's own move-on timer only runs when the test says
+    // The test's clock: once paused, age verification's move-on timer only runs when the test says
     await page.clock.install();
     const link = appPaths.gameJoin({ gameCode: 'ABC123' });
     await page.goto(link);
     await expect(page).toHaveURL(/\/auth$/);
 
     await signUp(page, { name: 'Link User', email: `link${Date.now()}@test.com` });
+    // Stop the page's clock just ahead of verification's move-on delay, so it can't fire before Next
+    await page.clock.pauseAt(Date.now() + 500);
     await page.getByText('[Dev] Skip verification').click();
     await expect(page).toHaveURL(/\/auth\/notifications/);
     // Straight away, as a quick player would: age verification must not bring them back here

@@ -96,14 +96,17 @@ export default function SeasonEndPage() {
   const canvasRef = useRef(null);
   const isAdmin = activeClub?.role === 'ADMIN' || activeClub?.adminId === user?.id;
 
-  useEffect(() => { if (!activeClub) loadClub(clubId); }, [clubId, activeClub]);
+  useEffect(() => { if (activeClub?.id !== clubId) loadClub(clubId); }, [clubId, activeClub]);
 
   useEffect(() => {
     if (!seasonId) return undefined;
     let cancelled = false;
     fetchSeasonResults(clubId, seasonId).then((results) => {
       if (cancelled) return;
-      if (results) { setSeasonData(results); setPhase('celebration'); } else setPhase('missing');
+      if (!results) setPhase('missing');
+      // A season still running has no results yet: the club screen shows it
+      else if (results.season.status !== 'ENDED') navigate(`/clubs/${clubId}`, { replace: true });
+      else { setSeasonData(results); setPhase('celebration'); }
     });
     return () => { cancelled = true; };
   }, [clubId, seasonId, fetchSeasonResults]);
@@ -119,10 +122,17 @@ export default function SeasonEndPage() {
     }
   };
 
+  // The season these results are for: the one just ended here, or the one a link named
+  const shownSeason = seasonData?.season;
+  // What's next is the admin's call only while this was the club's last season: none newer is running
+  const canChooseNext = isAdmin && shownSeason?.status === 'ENDED'
+    && (!activeClub?.currentSeason || activeClub.currentSeason.id === shownSeason.id);
+
   const handleNewSeason = async (config) => {
+    const lastSeason = shownSeason ?? activeClub?.currentSeason;
     const data = config || {
-      seasonType: activeClub?.currentSeason?.seasonType || 'FIXED_LENGTH',
-      lengthDays: 90,
+      seasonType: lastSeason?.seasonType || 'FIXED_LENGTH',
+      lengthDays: lastSeason?.lengthDays ?? 90,
     };
     const result = await startNewSeason(clubId, data);
     if (result.success) {
@@ -159,7 +169,7 @@ export default function SeasonEndPage() {
     try {
       renderSeasonCard(canvasRef.current, {
         clubName: activeClub?.name,
-        seasonLabel: `Season ${activeClub?.currentSeason?.seasonNumber || ''} Complete`,
+        seasonLabel: `${shownSeason?.name || 'Season'} Complete`,
         champion: lb[0],
         awards: seasonData?.awards || [],
         standings: lb,
@@ -284,7 +294,7 @@ export default function SeasonEndPage() {
           {isSharing ? 'Generating…' : 'Share Results as Image'}
         </Button>
 
-        {isAdmin ? (
+        {canChooseNext ? (
           <Button variant="primary" className="w-full mt-3" onClick={() => setPhase('decision')}>
             What's Next?
           </Button>

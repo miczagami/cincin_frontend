@@ -86,6 +86,9 @@ jobs:
           cat "$GITHUB_WORKSPACE/backend.log"; exit 1
 
       - run: npm ci
+      # The runner's Microsoft apt source (not needed here) sometimes answers 403, which fails
+      # the apt-get update that --with-deps runs; drop it so only Ubuntu's mirrors are read
+      - run: sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list /etc/apt/sources.list.d/microsoft-prod.sources
       - run: npx playwright install --with-deps chromium
 
       - name: Browser smoke tests

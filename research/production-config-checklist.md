@@ -18,7 +18,7 @@ I traced every `process.env` and `import.meta.env` read, every config default an
    - **AI is down.** The Anthropic model is hard-coded to `claude-sonnet-4-20250514`, which Anthropic retired on 2026-06-15. Label scanning, note synthesis and AI guess matching all fail on the default provider.
    - **Nobody can pass the age gate.** The PWA never mounts the Onfido SDK and never calls `/age-verify/submit`. Games, scans, bottles and clubs all require age verification.
 2. **The backend needs about 25 runtime variables on the Sevalla application.** These are hard requirements:
-   - **Refuses to start:** only one, `JWT_SECRET`.
+   - **Refuses to start:** `JWT_SECRET` when missing, and `AI_VISION_PROVIDER` or `AI_LLM_PROVIDER` when set to anything but `anthropic` (miczagami/cincin_backend#8).
    - **No mock in production:** Stripe, Onfido and SendGrid return 503 or fail, not mock.
    - **Fail silently or near-silently:** missing `CORS_ORIGIN`, `APP_URL`, `CLIENT_IP_HEADER`, `STRIPE_WEBHOOK_SECRET`, `AGE_VERIFY_WEBHOOK_SECRET`, `EMAIL_FROM_ADDRESS` and `FIREBASE_SERVICE_ACCOUNT`.
 3. **The PWA needs 9 build variables on the Sevalla static site:** `VITE_API_URL`, `VITE_WS_URL` and seven `VITE_FIREBASE_*`. They are baked in at build time, so every change needs a rebuild. Without `VITE_API_URL` the app calls `/api` on the static host, which answers every path with `index.html` and a 200 status.
@@ -249,7 +249,7 @@ There is no Onfido, Stripe or Firebase DNS record. Apple's Sign in with Apple em
 
 | Behaviour | Settings |
 |---|---|
-| **Refuses to start** | `JWT_SECRET` |
+| **Refuses to start** | `JWT_SECRET` (missing); `AI_VISION_PROVIDER`, `AI_LLM_PROVIDER` (set to anything but `anthropic`) |
 | **Returns 5xx to the user** | <ul><li>Stripe key: 503</li><li>price IDs: 500</li><li>Onfido key, or provider `mock`: 503</li><li>AI key: 503</li><li>retired Anthropic model: 502</li><li>social client IDs: 503</li><li>resend verification without SendGrid: 502</li></ul> |
 | **Silent or log-only** | <ul><li>`CORS_ORIGIN`: browser blocked</li><li>`APP_URL`: localhost links</li><li>`CLIENT_IP_HEADER`: shared rate limit</li><li>`STRIPE_WEBHOOK_SECRET`: paid but not upgraded</li><li>`AGE_VERIFY_WEBHOOK_SECRET`: never verified</li><li>`SENDGRID_API_KEY` or `EMAIL_FROM_ADDRESS`: no emails</li><li>`FIREBASE_SERVICE_ACCOUNT` or `VITE_FIREBASE_*`: no push</li><li>AI guess evaluation: falls back to exact matching</li><li>`VITE_API_URL` / `VITE_WS_URL`: HTML instead of JSON, no sockets</li><li>`DATABASE_URL`: `/health` still ok</li></ul> |
 | **Optional** | `REDIS_URL`, `SG_TEMPLATE_*`, `APNS_*`, `RATE_LIMIT_*`, `JWT_*_EXPIRES_IN`, `CRON_ENABLED`, `EMAIL_FROM_NAME` |

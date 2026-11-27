@@ -27,6 +27,14 @@ async function openBrokenForgotPassword(page) {
   await page.goto('/auth/forgot-password');
 }
 
+/** Sign in as the seeded host, then open Home with its page module broken. */
+async function openBrokenHome(browser) {
+  const page = await signIn(browser, 'host@test.com');
+  await breakModule(page, '/src/pages/home/HomePage.jsx');
+  await page.goto('/');
+  return page;
+}
+
 /** Collect every console error that came through reportError(). */
 function collectReports(page) {
   const reports = [];
@@ -56,9 +64,7 @@ test.describe('recovery screen', () => {
   });
 
   test('when Home itself is broken, signing out is the way back', async ({ browser }) => {
-    const page = await signIn(browser, 'host@test.com');
-    await breakModule(page, '/src/pages/home/HomePage.jsx');
-    await page.goto('/');
+    const page = await openBrokenHome(browser);
     await expect(recoveryScreen(page)).toBeVisible();
     // The explanation names the way back this screen actually offers
     await expect(page.getByText('Try again, or sign out and back in.')).toBeVisible();
@@ -74,13 +80,12 @@ test.describe('recovery screen', () => {
   });
 
   test('Sign out shows it is working while a slow logout finishes', async ({ browser }) => {
-    const page = await signIn(browser, 'host@test.com');
-    await breakModule(page, '/src/pages/home/HomePage.jsx');
+    const page = await openBrokenHome(browser);
+    // Logout is only requested on click, so routing it after Home has loaded is in time
     await page.route('**/api/auth/logout', async (route) => {
       await new Promise((r) => setTimeout(r, 2000));
       await route.continue();
     });
-    await page.goto('/');
 
     const signOut = page.getByRole('button', { name: 'Sign out' });
     await signOut.click();
@@ -90,10 +95,9 @@ test.describe('recovery screen', () => {
   });
 
   test('Sign out still signs out when the server never answers', async ({ browser }) => {
-    const page = await signIn(browser, 'host@test.com');
-    await breakModule(page, '/src/pages/home/HomePage.jsx');
+    const page = await openBrokenHome(browser);
+    // Logout is only requested on click, so routing it after Home has loaded is in time
     await page.route('**/api/auth/logout', () => {}); // never fulfilled
-    await page.goto('/');
 
     await page.getByRole('button', { name: 'Sign out' }).click();
     // Try again would reload and cancel the sign-out, so it waits too
@@ -106,11 +110,11 @@ test.describe('recovery screen', () => {
   });
 
   test('the render error is reported', async ({ page }) => {
-    const reports = collectReports(page);
+    const reportedText = collectReports(page);
     await openBrokenForgotPassword(page);
     await expect(recoveryScreen(page)).toBeVisible();
 
-    await expect.poll(reports).toContain(`[reportError] route Error: ${RENDER_ERROR}`);
+    await expect.poll(reportedText).toContain(`[reportError] route Error: ${RENDER_ERROR}`);
   });
 
   test('"Go home" leaves the broken screen', async ({ page }) => {
@@ -136,7 +140,7 @@ test.describe('recovery screen', () => {
   });
 
   test('when the route-level recovery itself fails, the app-level boundary still recovers', async ({ page }) => {
-    const reports = collectReports(page);
+    const reportedText = collectReports(page);
     await breakModule(page, '/src/components/layout/RouteErrorBoundary.jsx', BOUNDARY_ERROR);
     await openBrokenForgotPassword(page);
 
@@ -145,6 +149,6 @@ test.describe('recovery screen', () => {
     await expect(page.getByRole('button', { name: 'Go home' })).toBeVisible();
     await expect(page.getByText(RENDER_ERROR)).toHaveCount(0);
     await expect(page.getByText(BOUNDARY_ERROR)).toHaveCount(0);
-    await expect.poll(reports).toContain(`[reportError] app Error: ${BOUNDARY_ERROR}`);
+    await expect.poll(reportedText).toContain(`[reportError] app Error: ${BOUNDARY_ERROR}`);
   });
 });

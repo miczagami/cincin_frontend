@@ -31,7 +31,7 @@ export default defineConfig({
     { name: 'smoke', testDir: './tests/e2e', use: { baseURL: 'http://localhost:3000' } },
     // Full Chromium (new headless): the default headless shell reports notification permission as
     // "denied" even after it's granted, so the app would never set up push
-    { name: 'pwa', testDir: './tests/pwa', use: { baseURL: 'http://localhost:4173', channel: 'chromium' } },
+    { name: 'pwa', testDir: './tests/pwa', use: { baseURL: 'http://localhost:4183', channel: 'chromium' } },
   ],
   // Both servers proxy /api and /socket.io to the backend on :4000.
   // The backend itself must already be running against a seeded database.
@@ -43,10 +43,11 @@ export default defineConfig({
       timeout: 60_000,
     },
     {
-      command: `npx vite build --outDir ${PWA_OUT_DIR} && npx vite preview --outDir ${PWA_OUT_DIR} --port 4173 --strictPort`,
-      url: 'http://localhost:4173',
+      command: `npx vite build --outDir ${PWA_OUT_DIR} && npx vite preview --outDir ${PWA_OUT_DIR} --port 4183 --strictPort`,
+      url: 'http://localhost:4183',
       env: PWA_FIREBASE_ENV,
-      // Always a fresh build: reusing a server already on :4173 would test whatever it serves
+      // Always a fresh build: reusing a server already on the port would test whatever it serves.
+      // Not :4173, which `npm run preview` takes by default.
       reuseExistingServer: false,
       timeout: 180_000,
     },

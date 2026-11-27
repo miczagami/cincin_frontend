@@ -31,5 +31,5 @@ name (or `main`), seeds a Postgres service and runs the suite.
 
 `tests/pwa/` runs against a production build, since the service worker only exists there.
 Playwright builds it into `dist-pwa-test/` with stand-in Firebase values (see
-`PWA_FIREBASE_ENV` in `playwright.config.js`) and serves it with `vite preview` on :4173,
+`PWA_FIREBASE_ENV` in `playwright.config.js`) and serves it with `vite preview` on :4183,
 which also proxies `/api` to the backend. Run one project with `--project smoke` or `--project pwa`.

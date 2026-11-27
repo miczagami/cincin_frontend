@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync, spawn } from 'node:child_process';
 import { test, expect } from '@playwright/test';
-import { signIn } from '../e2e/helpers';
+import { signIn, PASSWORD } from '../e2e/helpers';
 import { PWA_FIREBASE_ENV, PWA_OUT_DIR } from '../../playwright.config.js';
 
 const PLACEHOLDERS = /YOUR_FIREBASE|YOUR_SENDER_ID|YOUR_VAPID_KEY|YOUR_APP_ID|your-project/;
@@ -36,6 +36,21 @@ async function signInWithPushAllowed(browser) {
   await expect(page).not.toHaveURL(/\/auth/);
   await pushReady;
   return page;
+}
+
+/**
+ * A fresh browser in which the seeded host is already signed in and notifications are allowed,
+ * as for a player reopening the app; nothing has loaded yet.
+ */
+async function signedInBrowser(browser, request, origin) {
+  const login = await (await request.post(`${origin}/api/auth/login`, { data: { email: 'host@test.com', password: PASSWORD } })).json();
+  const context = await browser.newContext({ baseURL: origin });
+  await context.grantPermissions(['notifications']);
+  await context.addInitScript(({ accessToken, refreshToken }) => {
+    sessionStorage.setItem('cin_access_token', accessToken);
+    sessionStorage.setItem('cin_refresh_token', refreshToken);
+  }, login);
+  return context;
 }
 
 /** The script URL of the worker controlling the page, once one does. */
@@ -80,11 +95,12 @@ test('the build ships the Firebase config from its build variables, and no place
 
 test.describe('a build without Firebase config', () => {
   const outDir = 'dist-pwa-unconfigured';
-  const port = 4174;
+  const port = 4184;
 
   test.beforeAll(() => {
     test.setTimeout(180_000);
-    const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('VITE_FIREBASE_')));
+    // Blank rather than unset: Vite would fill unset variables from a developer's .env
+    const env = { ...process.env, ...Object.fromEntries(Object.keys(PWA_FIREBASE_ENV).map((name) => [name, ''])) };
     execFileSync('npx', ['vite', 'build', '--outDir', outDir], { env, stdio: 'ignore' });
   });
 
@@ -93,17 +109,23 @@ test.describe('a build without Firebase config', () => {
   });
 
   test('runs with push turned off, and its worker still serves the app', async ({ browser, request }) => {
-    const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--outDir', outDir, '--port', String(port), '--strictPort'], { stdio: 'ignore' });
+    const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--outDir', outDir, '--port', String(port), '--strictPort'], { stdio: ['ignore', 'pipe', 'pipe'] });
     try {
+      // Wait for this server to say it is serving the port. If the port is taken it exits instead,
+      // and the test fails rather than run against whatever already holds the port.
+      await new Promise((resolve, reject) => {
+        let output = '';
+        const giveUp = setTimeout(() => reject(new Error(`vite preview did not start: ${output}`)), 20_000);
+        server.stdout.on('data', (chunk) => {
+          output += chunk;
+          // eslint-disable-next-line no-control-regex
+          if (output.replace(/\x1b\[[0-9;]*m/g, '').includes(`localhost:${port}`)) { clearTimeout(giveUp); resolve(); }
+        });
+        server.stderr.on('data', (chunk) => { output += chunk; });
+        server.once('exit', (code) => { clearTimeout(giveUp); reject(new Error(`vite preview exited (code ${code}): ${output}`)); });
+      });
       const origin = `http://localhost:${port}`;
-      await expect.poll(() => request.get(origin).then((r) => r.ok(), () => false), { timeout: 20_000 }).toBe(true);
-      const login = await (await request.post(`${origin}/api/auth/login`, { data: { email: 'host@test.com', password: 'TestPass1' } })).json();
-      const context = await browser.newContext({ baseURL: origin });
-      await context.grantPermissions(['notifications']);
-      await context.addInitScript(({ accessToken, refreshToken }) => {
-        sessionStorage.setItem('cin_access_token', accessToken);
-        sessionStorage.setItem('cin_refresh_token', refreshToken);
-      }, login);
+      const context = await signedInBrowser(browser, request, origin);
       const page = await context.newPage();
       const pushOutcome = page.waitForEvent('console', { predicate: (msg) => msg.text().startsWith('[Push]'), timeout: 20_000 });
 
@@ -281,13 +303,7 @@ test("a club notification opens that club's screen, whatever the club ID holds",
 test("push still sets up when the app's first load runs before its worker has registered", async ({ browser, baseURL, request }) => {
   // A player already signed in, with notifications allowed, opening the app in a fresh browser:
   // the app sets up push on mount, before the page has finished loading and registered the worker
-  const login = await (await request.post(`${baseURL}/api/auth/login`, { data: { email: 'host@test.com', password: 'TestPass1' } })).json();
-  const context = await browser.newContext();
-  await context.grantPermissions(['notifications']);
-  await context.addInitScript(({ accessToken, refreshToken }) => {
-    sessionStorage.setItem('cin_access_token', accessToken);
-    sessionStorage.setItem('cin_refresh_token', refreshToken);
-  }, login);
+  const context = await signedInBrowser(browser, request, baseURL);
   const page = await context.newPage();
   const pushOutcome = page.waitForEvent('console', {
     predicate: (msg) => /\[Push\] (Initialised|No service worker)/.test(msg.text()),
@@ -319,11 +335,12 @@ test('a tap opens its screen even when the open app tab is one the worker does n
   expect(opened).toEqual([`${baseURL}/palate/profile`]);
 });
 
-test('a plain tap on a push the backend sent opens the app at its link', async ({ browser, baseURL }) => {
+test("a plain tap on a push shaped like the backend's opens the app at its link", async ({ browser, baseURL }) => {
   test.setTimeout(90_000);
   const page = await signInWithPushAllowed(browser);
   const context = page.context();
-  // The backend's push carries a notification block, so the Firebase SDK shows it and handles the tap
+  // The backend's push carries a notification block, so the Firebase SDK shows it and handles the tap.
+  // Its link is a stand-in for the app's join screen; the links the backend builds today are fixed in #37.
   const link = `${baseURL}/game/join?code=ABC123`;
   await closeAppAndPush(page, baseURL, {
     notification: { title: 'Game invite', body: 'Sam invited you to a game', icon: '/icon-192.png' },

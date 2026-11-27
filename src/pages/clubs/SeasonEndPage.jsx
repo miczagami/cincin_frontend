@@ -17,6 +17,7 @@ import useAuthStore from '../../context/authStore';
 import useToast from '../../hooks/useToast';
 import { ScreenHeader, Button, Card, Spinner } from '../../components/ui';
 import { renderSeasonCard, canvasToBlob } from '../../utils/canvasCards';
+import { SHARE_URL } from '../../services/shareLinks';
 
 const SEASON_TYPES = [
   { value: 'FIXED_DATE', label: 'Fixed End Date' },
@@ -177,19 +178,21 @@ export default function SeasonEndPage() {
 
       const blob = await canvasToBlob(canvasRef.current);
       const file = new File([blob], 'cincin-season-results.png', { type: 'image/png' });
+      const shareText = `🏆 ${lb[0]?.displayName} won ${activeClub?.name} with ${lb[0]?.totalScore} points! Play CinCin.`;
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           title: `${activeClub?.name} Season Results`,
-          text: `🏆 ${lb[0]?.displayName} won with ${lb[0]?.totalScore} points!`,
+          // The link rides in the caption: share targets often drop a url sent with files
+          text: `${shareText} ${SHARE_URL}`,
           files: [file],
         });
         toast.success('Season results shared!');
       } else if (navigator.share) {
         await navigator.share({
           title: `${activeClub?.name} Season Results`,
-          text: `🏆 ${lb[0]?.displayName} won ${activeClub?.name} with ${lb[0]?.totalScore} points! Play CinCin.`,
-          url: 'https://cincin.app',
+          text: shareText,
+          url: SHARE_URL,
         });
         toast.success('Season results shared!');
       } else {

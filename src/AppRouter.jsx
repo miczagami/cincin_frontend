@@ -118,6 +118,7 @@ const router = createBrowserRouter([
         children: [
           { path: '/', element: <S><HomePage /></S> },
           { path: '/clubs', element: <S><ClubsListPage /></S> },
+          { path: '/clubs/join', element: <S><ClubsListPage /></S> }, // invite links: ?code=…
           { path: '/buy', element: <S><BuyPage /></S> },
           { path: '/palate', element: <S><PalateLockedPage /></S> },
           { path: '/profile', element: <S><ProfilePage /></S> },

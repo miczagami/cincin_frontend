@@ -91,6 +91,8 @@ jobs:
       - name: Browser smoke tests
         env:
           BACKEND_LOG: ${{ github.workspace }}/backend.log
+          # tests/e2e/links.spec.js opens every app link the backend lists
+          BACKEND_DIR: ${{ github.workspace }}/backend
         run: npx playwright test
 
       - if: failure()

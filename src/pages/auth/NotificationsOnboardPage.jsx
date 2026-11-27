@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button, Card, Toggle, ScreenHeader } from '../../components/ui';
+import { takeReturnPath } from '../../services/returnPath';
 
 const CATS = [
   { key: 'gameInvites', label: 'Game invites', desc: 'When someone invites you to play', on: true },
@@ -13,6 +14,8 @@ const CATS = [
 
 export default function NotificationsOnboardPage() {
   const navigate = useNavigate();
+  // The last step of sign-up: on to where the player was heading (e.g. a join link), else Home
+  const finish = () => navigate(takeReturnPath(), { replace: true });
   const { t } = useTranslation();
   const [prefs, setPrefs] = useState(Object.fromEntries(CATS.map(c => [c.key, c.on])));
 
@@ -31,8 +34,8 @@ export default function NotificationsOnboardPage() {
         ))}
       </div>
       <div className="mt-6">
-        <Button onClick={() => navigate('/')}>{t('common.next')}</Button>
-        <button onClick={() => navigate('/')} className="cin-btn-ghost w-full mt-2">{t('common.skip')}</button>
+        <Button onClick={finish}>{t('common.next')}</Button>
+        <button onClick={finish} className="cin-btn-ghost w-full mt-2">{t('common.skip')}</button>
       </div>
     </div>
   );

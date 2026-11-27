@@ -10,7 +10,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import useClubStore from '../../context/clubStore';
 import useAuthStore from '../../context/authStore';
 import { ScreenHeader, Button, Card, Input, Pill, EmptyState } from '../../components/ui';
@@ -27,8 +27,11 @@ export default function ClubsListPage() {
   const isPro = user?.subscriptionTier === 'PRO';
   const { clubs, fetchMyClubs, joinClub, isLoading, isJoining, error } = useClubStore();
 
-  const [showJoin, setShowJoin] = useState(false);
-  const [joinCode, setJoinCode] = useState('');
+  // An invite link (/clubs/join?code=…) opens the join form with its code filled in
+  const [searchParams] = useSearchParams();
+  const inviteCode = (searchParams.get('code') || '').trim().toUpperCase().slice(0, 6);
+  const [showJoin, setShowJoin] = useState(Boolean(inviteCode));
+  const [joinCode, setJoinCode] = useState(inviteCode);
   const [joinError, setJoinError] = useState(null);
 
   useEffect(() => { fetchMyClubs(); }, [fetchMyClubs]);

@@ -40,7 +40,7 @@ export async function emailedLink({ userId, email }, path) {
   const logPrefixes = [`[Email Mock] → user ${userId} `, `[Email Mock] → ${email} `];
   for (let i = 0; i < 40; i++) {
     const line = fs.readFileSync(log, 'utf8').split('\n').reverse()
-      .find((l) => logPrefixes.some((r) => l.includes(r)) && l.includes(path));
+      .find((l) => logPrefixes.some((prefix) => l.includes(prefix)) && l.includes(path));
     if (line) {
       const url = new URL(line.split(' | ').pop().trim());
       return url.pathname + url.search;

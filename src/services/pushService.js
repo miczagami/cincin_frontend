@@ -22,28 +22,38 @@
  *   const granted = await requestPushPermission();
  */
 
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getMessaging, getToken, onMessage, isSupported } from "firebase/messaging";
 import { notifications } from "./api";
 
 // ─── Firebase Config ───
-// These are PUBLIC identifiers — safe to ship in client code.
-// Replace with your actual Firebase project config.
+// These are PUBLIC identifiers — safe to ship in client code. They come from the
+// VITE_FIREBASE_* build variables (see .env.example); push stays off while any is unset.
 const FIREBASE_CONFIG = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "YOUR_FIREBASE_API_KEY",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "your-project.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "your-project-id",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "your-project.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "YOUR_SENDER_ID",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "YOUR_APP_ID",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 // VAPID key for web push (from Firebase Console → Cloud Messaging → Web Push certificates)
-const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY || "YOUR_VAPID_KEY";
+const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+
+const isFirebaseConfigured = () =>
+  Boolean(VAPID_KEY) && Object.values(FIREBASE_CONFIG).every(Boolean);
+
+// The push worker gets its own scope. The Workbox worker (offline caching) owns "/", and a
+// scope holds one worker, so registering this one at "/" would replace it. Push messages
+// reach the registration that subscribed, whatever its scope. This is Firebase's own default.
+const PUSH_SW_URL = "/firebase-messaging-sw.js";
+const PUSH_SW_SCOPE = "/firebase-cloud-messaging-push-scope";
 
 // ─── Singleton state ───
 let _app = null;
 let _messaging = null;
+let _swRegistration = null;
 let _currentToken = null;
 let _onForegroundMessage = null; // Callback for foreground messages
 
@@ -53,6 +63,8 @@ let _onForegroundMessage = null; // Callback for foreground messages
  */
 export async function isPushSupported() {
   try {
+    if (!isFirebaseConfigured()) return false;
+
     // Check Firebase-level support
     const firebaseSupported = await isSupported();
     if (!firebaseSupported) return false;
@@ -94,8 +106,8 @@ export async function initPushNotifications() {
       return false;
     }
 
-    // Initialise Firebase
-    _app = initializeApp(FIREBASE_CONFIG);
+    // Initialise Firebase (once — a retry after a failed registration reuses the app)
+    _app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG);
     _messaging = getMessaging(_app);
 
     // Register the Firebase Messaging service worker
@@ -104,6 +116,7 @@ export async function initPushNotifications() {
       console.warn("[Push] Service worker registration failed");
       return false;
     }
+    _swRegistration = swRegistration;
 
     // If permission already granted, get token silently
     if (Notification.permission === "granted") {
@@ -138,8 +151,8 @@ export async function requestPushPermission() {
       return false;
     }
 
-    // Ensure Firebase is initialised
-    if (!_messaging) {
+    // Ensure Firebase and the push worker are set up
+    if (!_swRegistration) {
       const initialised = await initPushNotifications();
       if (!initialised) return false;
     }
@@ -152,19 +165,9 @@ export async function requestPushPermission() {
       return false;
     }
 
-    // Get the service worker registration
-    const swRegistration = await navigator.serviceWorker.getRegistration(
-      "/firebase-messaging-sw.js"
-    );
-
-    if (!swRegistration) {
-      console.warn("[Push] No service worker registration found");
-      return false;
-    }
-
-    // Acquire and register the token
-    await acquireToken(swRegistration);
-    return true;
+    // Acquire and register the token, on the push worker's own registration
+    const token = await acquireToken(_swRegistration);
+    return Boolean(token);
   } catch (err) {
     console.error("[Push] Permission request failed:", err.message);
     return false;
@@ -213,27 +216,67 @@ export function getCurrentToken() {
 // ═══════════════════════════════════════════
 
 /**
- * Register the Firebase Messaging service worker.
- * This is separate from the Workbox service worker.
+ * Register the Firebase Messaging service worker in its own scope.
+ * This is separate from the Workbox service worker, which keeps "/".
+ *
+ * The worker can't read Vite's build variables, so the Firebase config travels in its
+ * URL. A config change therefore changes the URL, and the browser installs the new worker.
  */
 async function registerServiceWorker() {
   try {
-    // Pass Firebase config to the service worker via a global
-    // The SW reads this from self.__FIREBASE_CONFIG__
-    const swUrl = "/firebase-messaging-sw.js";
+    const swUrl = `${PUSH_SW_URL}?${new URLSearchParams(FIREBASE_CONFIG)}`;
 
     const registration = await navigator.serviceWorker.register(swUrl, {
-      scope: "/",
+      scope: PUSH_SW_SCOPE,
     });
 
-    // Wait for the service worker to be ready
-    await navigator.serviceWorker.ready;
+    // navigator.serviceWorker.ready would wait for the worker controlling this page
+    // (Workbox's), so wait for this registration's own worker instead
+    await waitForActiveWorker(registration);
+
+    await removeRootPushSubscription();
 
     console.log("[Push] Service worker registered:", registration.scope);
     return registration;
   } catch (err) {
     console.error("[Push] SW registration failed:", err.message);
     return null;
+  }
+}
+
+/** Resolve once the registration has an active worker. */
+function waitForActiveWorker(registration) {
+  if (registration.active) return Promise.resolve();
+
+  const worker = registration.installing || registration.waiting;
+  if (!worker) return Promise.reject(new Error("No service worker is installing"));
+
+  return new Promise((resolve, reject) => {
+    worker.addEventListener("statechange", () => {
+      if (worker.state === "activated") resolve();
+      if (worker.state === "redundant") reject(new Error("Push service worker failed to install"));
+    });
+  });
+}
+
+/**
+ * Earlier versions registered the push worker at "/", replacing the Workbox worker, and
+ * subscribed push there. Workbox takes "/" back on the next load, but the old subscription
+ * stays on that registration, where nothing handles its messages. Unsubscribing it
+ * invalidates its FCM token, which the backend then deletes on its next send.
+ */
+async function removeRootPushSubscription() {
+  try {
+    const root = await navigator.serviceWorker.getRegistration("/");
+    if (!root || new URL(root.scope).pathname !== "/") return;
+
+    const subscription = await root.pushManager.getSubscription();
+    if (subscription) {
+      await subscription.unsubscribe();
+      console.log("[Push] Removed the old push subscription from the root service worker");
+    }
+  } catch (err) {
+    console.warn("[Push] Could not check the root service worker:", err.message);
   }
 }
 

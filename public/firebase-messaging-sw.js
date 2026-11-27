@@ -12,9 +12,10 @@
 //    - Badge management
 //
 //  The existing Workbox service worker (from vite-plugin-pwa) handles
-//  offline caching. This file is a *separate* service worker specifically
-//  for Firebase Cloud Messaging. Firebase SDK's getToken() will register
-//  this worker automatically when called with { serviceWorkerRegistration }.
+//  offline caching and owns scope "/". This file is a *separate* service
+//  worker for Firebase Cloud Messaging, registered by
+//  src/services/pushService.js in its own scope
+//  (/firebase-cloud-messaging-push-scope) so it never replaces Workbox's.
 // ═══════════════════════════════════════════════════════════════
 
 /* eslint-env serviceworker */
@@ -25,51 +26,57 @@ importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js");
 
 // ─── Firebase Config ───
-// These values are PUBLIC and safe to embed (they identify the project,
-// not grant access). The actual auth happens server-side via the
-// service account. Replace these with your Firebase project values.
-firebase.initializeApp({
-  apiKey: self.__FIREBASE_CONFIG__?.apiKey || "YOUR_FIREBASE_API_KEY",
-  authDomain: self.__FIREBASE_CONFIG__?.authDomain || "your-project.firebaseapp.com",
-  projectId: self.__FIREBASE_CONFIG__?.projectId || "your-project-id",
-  storageBucket: self.__FIREBASE_CONFIG__?.storageBucket || "your-project.appspot.com",
-  messagingSenderId: self.__FIREBASE_CONFIG__?.messagingSenderId || "YOUR_SENDER_ID",
-  appId: self.__FIREBASE_CONFIG__?.appId || "YOUR_APP_ID",
-});
+// The app registers this worker as firebase-messaging-sw.js?apiKey=…&projectId=…, from its
+// VITE_FIREBASE_* build variables (src/services/pushService.js). These values are PUBLIC
+// (they identify the project, not grant access); sending happens server-side.
+const params = new URL(self.location.href).searchParams;
+const firebaseConfig = {
+  apiKey: params.get("apiKey"),
+  authDomain: params.get("authDomain"),
+  projectId: params.get("projectId"),
+  storageBucket: params.get("storageBucket"),
+  messagingSenderId: params.get("messagingSenderId"),
+  appId: params.get("appId"),
+};
 
-const messaging = firebase.messaging();
+if (Object.values(firebaseConfig).every(Boolean)) {
+  firebase.initializeApp(firebaseConfig);
+  const messaging = firebase.messaging();
 
-// ─── Background Message Handler ───
-// Fires when a push arrives while the app is not in the foreground.
-// FCM data-only messages (no notification key) ALWAYS come here.
-// FCM notification messages come here ONLY when the app is backgrounded.
-messaging.onBackgroundMessage((payload) => {
-  console.log("[FCM SW] Background message received:", payload);
+  // ─── Background Message Handler ───
+  // Fires when a push arrives while the app is not in the foreground.
+  // FCM data-only messages (no notification key) ALWAYS come here.
+  // FCM notification messages come here ONLY when the app is backgrounded.
+  messaging.onBackgroundMessage((payload) => {
+    console.log("[FCM SW] Background message received:", payload);
 
-  const data = payload.data || {};
-  const notification = payload.notification || {};
+    const data = payload.data || {};
+    const notification = payload.notification || {};
 
-  const title = notification.title || data.title || "CinCin";
-  const body = notification.body || data.body || "";
+    const title = notification.title || data.title || "CinCin";
+    const body = notification.body || data.body || "";
 
-  const options = {
-    body,
-    icon: "/icon-192.png",
-    badge: "/badge-72.png",
-    vibrate: [100, 50, 100],
-    tag: data.type || "general", // Collapse same-type notifications
-    renotify: true,
-    data: {
-      // Pass through for notificationclick handler
-      type: data.type,
-      url: data.url || buildUrl(data),
-      ...data,
-    },
-    actions: getActions(data.type),
-  };
+    const options = {
+      body,
+      icon: "/icon-192.png",
+      badge: "/badge-72.png",
+      vibrate: [100, 50, 100],
+      tag: data.type || "general", // Collapse same-type notifications
+      renotify: true,
+      data: {
+        // Pass through for notificationclick handler
+        type: data.type,
+        url: data.url || buildUrl(data),
+        ...data,
+      },
+      actions: getActions(data.type),
+    };
 
-  return self.registration.showNotification(title, options);
-});
+    return self.registration.showNotification(title, options);
+  });
+} else {
+  console.warn("[FCM SW] Registered without a Firebase config; background push is off");
+}
 
 // ─── Notification Click Handler ───
 self.addEventListener("notificationclick", (event) => {

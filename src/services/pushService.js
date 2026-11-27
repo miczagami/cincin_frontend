@@ -9,7 +9,6 @@
  *   - Request notification permission from the user
  *   - Obtain FCM push token and register with backend
  *   - Handle foreground messages (show in-app toast)
- *   - Handle notification click routing from service worker
  *   - Token refresh management
  *
  * Usage:
@@ -25,21 +24,13 @@
 import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage, isSupported } from "firebase/messaging";
 import { notifications } from "./api";
-
-// ─── Firebase Config ───
-// These are PUBLIC identifiers — safe to ship in client code.
-// Replace with your actual Firebase project config.
-const FIREBASE_CONFIG = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "YOUR_FIREBASE_API_KEY",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "your-project.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "your-project-id",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "your-project.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "YOUR_SENDER_ID",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "YOUR_APP_ID",
-};
+import { firebaseConfig, firebaseConfigured } from "./firebaseConfig";
 
 // VAPID key for web push (from Firebase Console → Cloud Messaging → Web Push certificates)
-const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY || "YOUR_VAPID_KEY";
+const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+
+// Push needs a Firebase project configured at build time
+const FIREBASE_CONFIGURED = firebaseConfigured && Boolean(VAPID_KEY);
 
 // ─── Singleton state ───
 let _app = null;
@@ -53,6 +44,11 @@ let _onForegroundMessage = null; // Callback for foreground messages
  */
 export async function isPushSupported() {
   try {
+    if (!FIREBASE_CONFIGURED) {
+      console.info("[Push] Off: no Firebase project configured at build time");
+      return false;
+    }
+
     // Check Firebase-level support
     const firebaseSupported = await isSupported();
     if (!firebaseSupported) return false;
@@ -95,13 +91,13 @@ export async function initPushNotifications() {
     }
 
     // Initialise Firebase
-    _app = initializeApp(FIREBASE_CONFIG);
+    _app = initializeApp(firebaseConfig);
     _messaging = getMessaging(_app);
 
-    // Register the Firebase Messaging service worker
-    const swRegistration = await registerServiceWorker();
+    // Push arrives through the app's own service worker (src/sw.js)
+    const swRegistration = await appServiceWorker();
     if (!swRegistration) {
-      console.warn("[Push] Service worker registration failed");
+      console.warn("[Push] No service worker controls the app");
       return false;
     }
 
@@ -113,8 +109,6 @@ export async function initPushNotifications() {
     // Listen for foreground messages
     setupForegroundListener();
 
-    // Listen for notification clicks from service worker
-    setupClickListener();
 
     console.log("[Push] Initialised successfully");
     return true;
@@ -152,10 +146,7 @@ export async function requestPushPermission() {
       return false;
     }
 
-    // Get the service worker registration
-    const swRegistration = await navigator.serviceWorker.getRegistration(
-      "/firebase-messaging-sw.js"
-    );
+    const swRegistration = await appServiceWorker();
 
     if (!swRegistration) {
       console.warn("[Push] No service worker registration found");
@@ -213,28 +204,13 @@ export function getCurrentToken() {
 // ═══════════════════════════════════════════
 
 /**
- * Register the Firebase Messaging service worker.
- * This is separate from the Workbox service worker.
+ * The app's service worker registration (src/sw.js), which also receives push. A production
+ * build always registers it, but only once the page has loaded, so wait for it to be ready.
+ * The dev server has no worker: null.
  */
-async function registerServiceWorker() {
-  try {
-    // Pass Firebase config to the service worker via a global
-    // The SW reads this from self.__FIREBASE_CONFIG__
-    const swUrl = "/firebase-messaging-sw.js";
-
-    const registration = await navigator.serviceWorker.register(swUrl, {
-      scope: "/",
-    });
-
-    // Wait for the service worker to be ready
-    await navigator.serviceWorker.ready;
-
-    console.log("[Push] Service worker registered:", registration.scope);
-    return registration;
-  } catch (err) {
-    console.error("[Push] SW registration failed:", err.message);
-    return null;
-  }
+async function appServiceWorker() {
+  if (!import.meta.env.PROD) return null;
+  return navigator.serviceWorker.ready;
 }
 
 /**
@@ -330,22 +306,3 @@ function setupForegroundListener() {
   });
 }
 
-/**
- * Listen for notification click messages from the service worker.
- * The SW sends a postMessage when a notification is clicked.
- */
-function setupClickListener() {
-  navigator.serviceWorker.addEventListener("message", (event) => {
-    if (event.data?.type === "NOTIFICATION_CLICK") {
-      const { url, payload } = event.data;
-      console.log("[Push] Notification click → navigating to:", url);
-
-      // Use React Router navigation if available
-      if (window.__ROUTER_NAVIGATE__) {
-        window.__ROUTER_NAVIGATE__(url);
-      } else {
-        window.location.href = url;
-      }
-    }
-  });
-}

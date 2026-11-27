@@ -17,6 +17,7 @@ import useAuthStore from '../../context/authStore';
 import useToast from '../../hooks/useToast';
 import { ScreenHeader, Button, Card, Spinner } from '../../components/ui';
 import { renderSeasonCard, canvasToBlob } from '../../utils/canvasCards';
+import { SHARE_URL } from '../../services/shareLinks';
 
 const SEASON_TYPES = [
   { value: 'FIXED_DATE', label: 'Fixed End Date' },
@@ -189,7 +190,7 @@ export default function SeasonEndPage() {
         await navigator.share({
           title: `${activeClub?.name} Season Results`,
           text: `🏆 ${lb[0]?.displayName} won ${activeClub?.name} with ${lb[0]?.totalScore} points! Play CinCin.`,
-          url: 'https://cincin.app',
+          url: SHARE_URL,
         });
         toast.success('Season results shared!');
       } else {

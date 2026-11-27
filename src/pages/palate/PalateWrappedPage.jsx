@@ -21,6 +21,7 @@ import usePalateStore from '../../context/palateStore';
 import { ScreenHeader, Button, Card, Spinner } from '../../components/ui';
 import { drawLogo } from '../../components/brand/Logo';
 import { colors, alpha } from '../../theme/brand';
+import { SHARE_URL } from '../../services/shareLinks';
 
 // ── Brand colours (src/theme/brand.js) ──
 const COLOURS = {
@@ -293,7 +294,7 @@ export default function PalateWrappedPage() {
         await navigator.share({
           title: 'My CinCin Palate DNA',
           text: `🍷 My CinCin Palate Profile: ${wrapped.overall?.overallAccuracy}% accuracy across ${wrapped.gamesPlayed} games. Top strength: ${wrapped.strengths?.[0]?.category}. Check out CinCin!`,
-          url: 'https://cincin.app',
+          url: SHARE_URL,
         });
         setShareSuccess('shared');
       } else {
@@ -321,8 +322,8 @@ export default function PalateWrappedPage() {
   // ── Copy link fallback ──
   const handleCopyLink = useCallback(() => {
     const text = wrapped
-      ? `🍷 My CinCin Palate Profile: ${wrapped.overall?.overallAccuracy}% accuracy across ${wrapped.gamesPlayed} games. Top strength: ${wrapped.strengths?.[0]?.category}. Check out CinCin! https://cincin.app`
-      : 'https://cincin.app';
+      ? `🍷 My CinCin Palate Profile: ${wrapped.overall?.overallAccuracy}% accuracy across ${wrapped.gamesPlayed} games. Top strength: ${wrapped.strengths?.[0]?.category}. Check out CinCin! ${SHARE_URL}`
+      : SHARE_URL;
     navigator.clipboard?.writeText(text);
     setShareSuccess('copied');
     setTimeout(() => setShareSuccess(null), 2000);

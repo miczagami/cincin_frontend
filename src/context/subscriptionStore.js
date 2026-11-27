@@ -52,11 +52,8 @@ const useSubscriptionStore = create((set, get) => ({
   startCheckout: async (plan = 'monthly') => {
     set({ isLoading: true, error: null });
     try {
-      const data = await subscription.createCheckout({
-        plan,
-        successUrl: `${window.location.origin}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancelUrl: `${window.location.origin}/subscription/cancel`,
-      });
+      // The API sets where Stripe returns the player (the app's /subscription screens)
+      const data = await subscription.createCheckout({ plan });
 
       // Redirect to Stripe Checkout (or mock URL in dev)
       if (data.url) {
@@ -78,9 +75,8 @@ const useSubscriptionStore = create((set, get) => ({
   openBillingPortal: async () => {
     set({ isLoading: true, error: null });
     try {
-      const data = await subscription.createPortal({
-        returnUrl: `${window.location.origin}/settings`,
-      });
+      // The API sets where the portal returns the player (Settings)
+      const data = await subscription.createPortal({});
       if (data.url) {
         window.location.href = data.url;
       }

@@ -45,7 +45,7 @@ Each of these needs a build ticket. The checklist items in later sections are st
 
 | # | Feature | Gap | Evidence |
 |---|---|---|---|
-| B1 | AI label scan, note synthesis, AI guess matching | All Anthropic calls use `claude-sonnet-4-20250514`. Anthropic **retired** that model on **2026-06-15** and requests to it fail. The recommended replacement is `claude-sonnet-5-5`. The OpenAI path uses `gpt-4o` and `gpt-4o-mini`; third-party reports put their API shutdown at 2027-01-14, which I could not confirm on OpenAI's own page. The model ID is not configurable. | `src/services/scanService.js` (`callAnthropicVision`, `callAnthropicLLM`), `src/services/gameService.js` (`evaluateGuessWithAI`). [Anthropic model deprecations](https://platform.claude.com/docs/en/about-claude/model-deprecations) |
+| B1 | AI label scan, note synthesis, AI guess matching | All Anthropic calls use `claude-sonnet-4-20250514`. Anthropic **retired** that model on **2026-06-15** and requests to it fail. The recommended replacement is `claude-sonnet-5-5`. (The OpenAI path, `gpt-4o` and `gpt-4o-mini`, was removed in miczagami/cincin_backend#8.) The model ID is not configurable. | `src/services/scanService.js` (`callAnthropicVision`, `callAnthropicLLM`), `src/services/gameService.js` (`evaluateGuessWithAI`). [Anthropic model deprecations](https://platform.claude.com/docs/en/about-claude/model-deprecations) |
 | B2 | Age verification (Onfido) | `AgeVerifyPage.jsx` calls `/initiate`, then only polls `/status`. A comment says "In production: mount Onfido/Jumio SDK widget". The page never loads the Onfido Web SDK and never calls `POST /api/auth/age-verify/submit`, so no Onfido check is ever created. The `ageVerified` gate is enforced on `/api/games`, `/api/scan`, `/api/bottles`, `/api/clubs` and on the Socket.io handshake. | frontend `src/pages/auth/AgeVerifyPage.jsx`. backend `src/routes/{games,scan,bottles,cellarClubs}.js`, `src/config/socketServer.js` |
 | B3 | Google / Apple sign-in | The PWA sends the literal tokens `'PLACEHOLDER'` (login) and `'PLACEHOLDER_TOKEN'` (signup). It loads no Google Identity Services or Sign in with Apple JS. The backend verifies real ID tokens, so the buttons always fail with a 401, or a 503 while the client IDs are empty. | frontend `src/pages/auth/LoginPage.jsx`, `SignUpPage.jsx`. backend `src/services/socialAuthService.js` |
 | B4 | Web push in the background | The service worker reads `self.__FIREBASE_CONFIG__`, which nothing sets, so it always starts with placeholder values (`"YOUR_FIREBASE_API_KEY"` and so on). It is also registered at scope `/`, the same scope as the vite-plugin-pwa Workbox worker (`registerType: 'autoUpdate'`). Only one service worker can control a scope, so offline caching and FCM will replace each other. | frontend `public/firebase-messaging-sw.js`, `src/services/pushService.js` (`registerServiceWorker`), `vite.config.js` |
@@ -93,21 +93,18 @@ The Dockerfile sets `NODE_ENV=production` and `PORT=8080` (`Dockerfile`). Sevall
 
 ## 4. AI: label scan, note synthesis, guess evaluation
 
-Provider routing (`src/services/scanService.js`, `src/services/gameService.js`):
+Since miczagami/cincin_backend#8, every AI call (vision, note synthesis, guess evaluation) goes to Anthropic through the shared client (`src/services/aiClient.js`). The OpenAI and Google Vision paths, their keys and the `openai` package are gone.
 
-- **Vision:** `AI_VISION_PROVIDER` accepts `anthropic` (the default), `openai` or **`google_vision`**.
-  - `.env.example` documents the value as `google`. The code does not recognise `google` and **silently falls through to Anthropic**.
-- **Text** (note synthesis): `AI_LLM_PROVIDER`, else `AI_VISION_PROVIDER`, else `anthropic`.
-- **Guess evaluation:** `AI_LLM_PROVIDER`, else `anthropic`. It only runs if `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` is set.
+- **Provider settings:** `AI_VISION_PROVIDER` and `AI_LLM_PROVIDER` are no longer needed. Set to anything but `anthropic` (for example a leftover `openai` or `google`), either one **stops the API at startup** with a message naming the variable.
+- **Guess evaluation:** only runs if `ANTHROPIC_API_KEY` is set.
 - **Undocumented alias:** `AI_SERVICE_API_KEY` is accepted in place of `ANTHROPIC_API_KEY` for scanning and synthesis.
 
 | Setting | Where | Req. | If missing / wrong | How to verify |
 |---|---|---|---|---|
 | `ANTHROPIC_API_KEY` | [App env]. Anthropic Console, production workspace key. | Yes (default provider) | <ul><li>Scan returns **503** "Anthropic API key not configured".</li><li>Synthesis returns `[]`, logged with `console.error`.</li><li>Guess evaluation silently falls back to exact and taxonomy matching only.</li></ul>**Even with a key, the hard-coded model is retired (B1):** scans return 502, synthesis returns `[]` and guess evaluation returns `null`. | Scan a real label. The response has a `bottle` or `alternatives`, and there is no 502 in the logs. |
-| `AI_VISION_PROVIDER`, `AI_LLM_PROVIDER` | [App env] | No | Default to `anthropic`. Use `google_vision`, not `google`. | The API log shows the provider error, if any. |
-| `OPENAI_API_KEY` | [App env] | Only when using OpenAI | 503 when OpenAI is selected. If the guess provider is `anthropic` and only the OpenAI key is set, the Anthropic client gets an undefined key, the error is caught, and matching stays silently non-AI. | – |
-| `GOOGLE_VISION_API_KEY` | [App env]. Google Cloud: Vision API enabled, key restricted to that API. | Only with `google_vision` | 503. Google Vision returns raw OCR, not the brand and product JSON, so `matchBottle` gets no `product` or `brand` (Q3). | – |
-| Billing and usage limits | [Dashboard] (Anthropic Console / OpenAI) | Yes | Requests fail with 429 or 402 once credit runs out. The scan is not counted against the free tier on failure (`incrementScanCount` runs after the vision call). | The Console usage page shows production traffic. |
+| `AI_VISION_PROVIDER`, `AI_LLM_PROVIDER` | [App env] | No; leave unset | Any value but `anthropic` stops the API at startup, naming the variable. | The API starts and logs no provider error. |
+| `OPENAI_API_KEY`, `GOOGLE_VISION_API_KEY` | – | No | No longer read; don't copy them from Railway. | – |
+| Billing and usage limits | [Dashboard] (Anthropic Console) | Yes | Requests fail with 429 or 402 once credit runs out. The scan is not counted against the free tier on failure (`incrementScanCount` runs after the vision call). | The Console usage page shows production traffic. |
 
 ## 5. Age verification (Onfido)
 
@@ -254,7 +251,7 @@ There is no Onfido, Stripe or Firebase DNS record. Apple's Sign in with Apple em
 |---|---|
 | **Refuses to start** | `JWT_SECRET` |
 | **Returns 5xx to the user** | <ul><li>Stripe key: 503</li><li>price IDs: 500</li><li>Onfido key, or provider `mock`: 503</li><li>AI key: 503</li><li>retired Anthropic model: 502</li><li>social client IDs: 503</li><li>resend verification without SendGrid: 502</li></ul> |
-| **Silent or log-only** | <ul><li>`CORS_ORIGIN`: browser blocked</li><li>`APP_URL`: localhost links</li><li>`CLIENT_IP_HEADER`: shared rate limit</li><li>`STRIPE_WEBHOOK_SECRET`: paid but not upgraded</li><li>`AGE_VERIFY_WEBHOOK_SECRET`: never verified</li><li>`SENDGRID_API_KEY` or `EMAIL_FROM_ADDRESS`: no emails</li><li>`FIREBASE_SERVICE_ACCOUNT` or `VITE_FIREBASE_*`: no push</li><li>`AI_VISION_PROVIDER=google`: actually uses Anthropic</li><li>AI guess evaluation: falls back to exact matching</li><li>`VITE_API_URL` / `VITE_WS_URL`: HTML instead of JSON, no sockets</li><li>`DATABASE_URL`: `/health` still ok</li></ul> |
+| **Silent or log-only** | <ul><li>`CORS_ORIGIN`: browser blocked</li><li>`APP_URL`: localhost links</li><li>`CLIENT_IP_HEADER`: shared rate limit</li><li>`STRIPE_WEBHOOK_SECRET`: paid but not upgraded</li><li>`AGE_VERIFY_WEBHOOK_SECRET`: never verified</li><li>`SENDGRID_API_KEY` or `EMAIL_FROM_ADDRESS`: no emails</li><li>`FIREBASE_SERVICE_ACCOUNT` or `VITE_FIREBASE_*`: no push</li><li>AI guess evaluation: falls back to exact matching</li><li>`VITE_API_URL` / `VITE_WS_URL`: HTML instead of JSON, no sockets</li><li>`DATABASE_URL`: `/health` still ok</li></ul> |
 | **Optional** | `REDIS_URL`, `SG_TEMPLATE_*`, `APNS_*`, `RATE_LIMIT_*`, `JWT_*_EXPIRES_IN`, `CRON_ENABLED`, `EMAIL_FROM_NAME` |
 | **Dead** (set or not, no effect) | `SHARE_BASE_URL`, `API_BASE_URL`, `AGE_VERIFY_API_SECRET` |
 | **Never mock in production** | Stripe (`getStripe` throws), Onfido (`getProvider` throws), account email (logs only outside production) |
@@ -289,7 +286,7 @@ There is no Onfido, Stripe or Firebase DNS record. Apple's Sign in with Apple em
 
 - **Q1. Production reference data:** how do the flavour taxonomy and bottle catalogue get into the production database without the seed's test users (`host@test.com` etc. with a known password and PRO)? Does the Railway database already hold real data?
 - **Q2. Onfido integration:** which Onfido SDK or flow (Web SDK vs. Studio workflow), which referrer pattern, and which account region? Build ticket for B2.
-- **Q3. Vision provider for launch:** does the launch vision provider stay Anthropic (after the model fix), or move to OpenAI or Google Vision? The Google Vision path returns no `brand` or `product`, so it cannot identify bottles as written.
+- **Q3. Vision provider for launch:** answered: Anthropic only (miczagami/cincin_frontend#22); the other providers were removed in miczagami/cincin_backend#8.
 - **Q4. Rate limits at venues:** 100 requests and 20 auth attempts per 15 minutes per IP may lock out a group playing on one venue Wi-Fi. Should the limits be per user rather than per IP for authenticated routes?
 - **Q5. Redirect URLs:** should the API ignore client-supplied Stripe `successUrl`, `cancelUrl` and `returnUrl`, or check them against `APP_URL`? As written, any authenticated caller can make Stripe redirect to any site after checkout.
 - **Q6. Comma-separated values on Sevalla:** `GOOGLE_CLIENT_IDS` and `APPLE_CLIENT_IDS` are comma-separated by design, and the runbook says Sevalla breaks on unescaped commas. Is that fine while there is one web client ID each, and what happens when native apps add a second?

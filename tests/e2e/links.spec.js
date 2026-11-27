@@ -279,15 +279,17 @@ test.describe('a signed-out player who opens a join link', () => {
 
   test('lands on the join after signing up instead', async ({ page }) => {
     // The test's clock: once paused, age verification's move-on timer only runs when the test says
-    await page.clock.install();
+    const clockStart = Date.now();
+    await page.clock.install({ time: clockStart });
     const link = appPaths.gameJoin({ gameCode: 'ABC123' });
     await page.goto(link);
     await expect(page).toHaveURL(/\/auth$/);
 
     await signUp(page, { name: 'Link User', email: `link${Date.now()}@test.com` });
-    // Stop the page's clock just ahead of its own time (it keeps moving, and pausing in the past
-    // throws), well before verification's 1s move-on timer, so that timer can't fire before Next
-    await page.clock.pauseAt(await page.evaluate(() => Date.now()) + 100);
+    // Stop the page's clock before verification sets its 1s move-on timer, so that timer can't fire
+    // before Next. The clock keeps moving until paused (pausing in the past throws), so pause at a
+    // point safely ahead of it: sign-up takes well under 20s.
+    await page.clock.pauseAt(clockStart + 20_000);
     await page.getByText('[Dev] Skip verification').click();
     await expect(page).toHaveURL(/\/auth\/notifications/);
     // Straight away, as a quick player would: age verification must not bring them back here

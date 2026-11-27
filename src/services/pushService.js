@@ -9,7 +9,6 @@
  *   - Request notification permission from the user
  *   - Obtain FCM push token and register with backend
  *   - Handle foreground messages (show in-app toast)
- *   - Handle notification click routing from service worker
  *   - Token refresh management
  *
  * Usage:

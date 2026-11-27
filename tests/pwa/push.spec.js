@@ -124,7 +124,8 @@ test('a push that arrives while the app is closed shows a notification with the 
   const page = await signInWithPushAllowed(browser);
   const context = page.context();
 
-  // What Firebase delivers for the backend's game-invite push (notificationService.sendFcm)
+  // A notification message shaped like the backend's game invite (notificationService.sendFCM).
+  // Its link is the app's join screen; the links the backend builds today are fixed in #37.
   const link = `${baseURL}/game/join?code=ABC123`;
   const devtoolsTab = await closeAppAndPush(page, baseURL, {
     notification: { title: 'Game invite', body: 'Sam invited you to a game', icon: '/icon-192.png', badge: '/badge-72.png' },
@@ -180,7 +181,10 @@ async function tapNotification(context, action = '') {
   }, action);
 }
 
-/** What the backend's game-invite push looks like once Firebase delivers it (notificationService.sendFCM). */
+/**
+ * A game invite shaped like the backend's (notificationService.sendFCM), with its action buttons.
+ * The tap link here is a stand-in; the backend's own links are fixed in #37.
+ */
 function gameInvitePush(baseURL) {
   return {
     notification: {

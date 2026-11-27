@@ -10,7 +10,7 @@ export function RequireAuth({ children }) {
   if (!isAuthenticated) {
     // Signing in (or up) comes back here, e.g. to the join a link opened
     rememberReturnPath(location);
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    return <Navigate to="/auth" replace />;
   }
   return children;
 }

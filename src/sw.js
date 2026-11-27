@@ -125,10 +125,10 @@ function appPathFor(data) {
     case 'club_member_joined':
     case 'club_approval':
     case 'weekly_standings':
-      return data.clubId ? `/clubs/${encodeURIComponent(data.clubId)}` : '/clubs';
+    // The club screen shows its season (season-end is the admin's "end season" step)
     case 'season_ending':
     case 'season_ended':
-      return data.clubId ? `/clubs/${encodeURIComponent(data.clubId)}/season-end` : '/clubs';
+      return data.clubId ? `/clubs/${encodeURIComponent(data.clubId)}` : '/clubs';
     case 'palate_updated':
       return '/palate/profile';
     case 'monthly_palate_wrapped':

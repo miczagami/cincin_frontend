@@ -27,11 +27,15 @@ export default function ClubsListPage() {
   const isPro = user?.subscriptionTier === 'PRO';
   const { clubs, fetchMyClubs, joinClub, isLoading, isJoining, error } = useClubStore();
 
-  // An invite link (/clubs/join?code=…) opens the join form with its code filled in
+  // An invite link (/clubs/join?code=…) opens the join form with its code filled in.
+  // Codes are cleaned as on the game join screen; one that isn't 6 characters is ignored.
   const [searchParams] = useSearchParams();
-  const inviteCode = (searchParams.get('code') || '').trim().toUpperCase().slice(0, 6);
+  const linkCode = (searchParams.get('code') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const inviteCode = linkCode.length === 6 ? linkCode : '';
   const [showJoin, setShowJoin] = useState(Boolean(inviteCode));
   const [joinCode, setJoinCode] = useState(inviteCode);
+  // The same screen serves /clubs and /clubs/join, so follow the link when it changes (e.g. the Clubs tab)
+  useEffect(() => { setShowJoin(Boolean(inviteCode)); setJoinCode(inviteCode); }, [inviteCode]);
   const [joinError, setJoinError] = useState(null);
 
   useEffect(() => { fetchMyClubs(); }, [fetchMyClubs]);

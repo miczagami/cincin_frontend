@@ -372,3 +372,14 @@ test('a tap while the app is open takes the open app to its screen', async ({ br
   expect(opened).toEqual([]);
   await expect(page).toHaveURL(/\/palate\/profile$/);
 });
+
+test("a season notification opens its club's screen, which shows the season", async ({ browser, baseURL }) => {
+  const page = await signInWithPushAllowed(browser);
+  const context = page.context();
+  await closeAppAndPush(page, baseURL, { data: { type: 'season_ending', title: 'Season ends soon', clubId: 'club-1', seasonId: 's-1' } });
+  await expect.poll(() => shownNotifications(context)).toHaveLength(1);
+
+  const { opened } = await tapNotification(context);
+
+  expect(opened).toEqual([`${baseURL}/clubs/club-1`]);
+});

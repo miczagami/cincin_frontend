@@ -4,14 +4,19 @@ import { expect } from '@playwright/test';
 export const PASSWORD = 'TestPass1';
 export const BOTTLE = 'Penfolds Bin 389';
 
+/** Fill in and submit the login form the page is showing. */
+export async function fillLogin(page, email) {
+  await page.locator('input[type="email"]').fill(email);
+  await page.locator('input[type="password"]').fill(PASSWORD);
+  await page.getByRole('button', { name: /sign in/i }).click();
+}
+
 /** Sign in through the login form in a fresh browser context. */
 export async function signIn(browser, email) {
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.goto('/auth/login');
-  await page.locator('input[type="email"]').fill(email);
-  await page.locator('input[type="password"]').fill(PASSWORD);
-  await page.getByRole('button', { name: /sign in/i }).click();
+  await fillLogin(page, email);
   await expect(page).not.toHaveURL(/\/auth\/login/);
   return page;
 }

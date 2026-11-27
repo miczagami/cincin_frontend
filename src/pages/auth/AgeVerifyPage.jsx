@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ShieldCheck, Loader2 } from 'lucide-react';
@@ -21,7 +21,16 @@ export default function AgeVerifyPage() {
   const [region] = useState(detectRegion);
   const [step, setStep] = useState('intro');
 
-  useEffect(() => { if (ageVerified) navigate('/auth/notifications'); }, [ageVerified, navigate]);
+  // Move on once, however verification finished: a second move would bring a player who
+  // already tapped through the next step back to it
+  const movedOn = useRef(false);
+  const moveOn = useCallback(() => {
+    if (movedOn.current) return;
+    movedOn.current = true;
+    navigate('/auth/notifications', { replace: true });
+  }, [navigate]);
+
+  useEffect(() => { if (ageVerified) moveOn(); }, [ageVerified, moveOn]);
 
   const handleBegin = async () => {
     setStep('verifying');
@@ -30,7 +39,7 @@ export default function AgeVerifyPage() {
       // In production: mount Onfido/Jumio SDK widget using result.data.sdkToken
       const interval = setInterval(async () => {
         const status = await checkAgeVerifyStatus();
-        if (status === 'verified') { clearInterval(interval); setStep('success'); setTimeout(() => navigate('/auth/notifications'), 1500); }
+        if (status === 'verified') { clearInterval(interval); setStep('success'); setTimeout(moveOn, 1500); }
         else if (status === 'failed') { clearInterval(interval); setStep('failed'); }
       }, 3000);
     } else { setStep('failed'); }
@@ -39,7 +48,7 @@ export default function AgeVerifyPage() {
   const handleDev = async () => {
     setStep('verifying');
     const result = await devVerify('1990-01-15');
-    if (result.success) { setStep('success'); setTimeout(() => navigate('/auth/notifications'), 1000); }
+    if (result.success) { setStep('success'); setTimeout(moveOn, 1000); }
     else setStep('failed');
   };
 

@@ -7,10 +7,11 @@
  * ../cincin_backend beside this repo) and opens each path in it.
  */
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { test, expect } from '@playwright/test';
-import { signIn, signUp, PASSWORD } from './helpers';
+import { signIn, signUp, fillLogin } from './helpers';
 
 function backendDir() {
   const candidates = [process.env.BACKEND_DIR, 'backend', '../cincin_backend'].filter(Boolean);
@@ -19,7 +20,17 @@ function backendDir() {
   return path.resolve(found);
 }
 
-const { appPaths } = createRequire(import.meta.url)(path.join(backendDir(), 'src/services/appLinks.js'));
+const BACKEND = backendDir();
+const { appPaths } = createRequire(import.meta.url)(path.join(BACKEND, 'src/services/appLinks.js'));
+
+/** Which backend checkout the links came from, so a run against a stale sibling checkout shows it. */
+function backendRevision() {
+  try {
+    return execFileSync('git', ['-C', BACKEND, 'log', '-1', '--format=%h %d'], { encoding: 'utf8' }).trim();
+  } catch {
+    return 'not a git checkout';
+  }
+}
 
 const heading = (page, name) => page.getByRole('heading', { name });
 
@@ -32,7 +43,6 @@ const SCREENS = {
   gameJoin: (page) => heading(page, 'Join Game'),
   clubJoin: (page) => page.getByPlaceholder('e.g. A7K3M2'),
   club: (page, club) => heading(page, club.name),
-  clubSeasonEnd: (page) => heading(page, /season/i),
   palateProfile: (page) => heading(page, 'Palate Profile'),
   palateWrapped: (page) => heading(page, 'Palate Wrapped'),
   subscription: (page) => heading(page, 'Subscription'),
@@ -47,13 +57,13 @@ async function seededClub(page) {
   const clubs = await page.evaluate(async () => (await fetch('/api/clubs', {
     headers: { Authorization: `Bearer ${sessionStorage.getItem('cin_access_token')}` },
   })).json());
-  const list = Array.isArray(clubs) ? clubs : clubs.clubs || clubs.data || [];
-  const club = list.find((c) => c.name === 'Friday Night Vino');
+  const club = clubs.find((c) => c.name === 'Friday Night Vino');
   if (!club) throw new Error(`The seeded club is missing from /api/clubs: ${JSON.stringify(clubs).slice(0, 200)}`);
   return club;
 }
 
 test('every app link the backend sends opens a real screen', async ({ browser }) => {
+  test.info().annotations.push({ type: 'backend', description: `${BACKEND} @ ${backendRevision()}` });
   const page = await signIn(browser, 'host@test.com');
   const club = await seededClub(page);
   const params = { gameCode: 'ABC123', inviteCode: 'FNV001', clubId: club.id, token: 'not-a-real-token' };
@@ -77,6 +87,29 @@ test("a club invite link opens the club join form with the invite's code", async
   await expect(page.getByPlaceholder('e.g. A7K3M2')).toHaveValue('FNV001');
 });
 
+test('a club invite code is cleaned like a game code, and a malformed one is ignored', async ({ browser }) => {
+  const page = await signIn(browser, 'player3@test.com');
+  const codeField = page.getByPlaceholder('e.g. A7K3M2');
+
+  await page.goto(appPaths.clubJoin({ inviteCode: ' fnv-001 ' }));
+  await expect(codeField).toHaveValue('FNV001');
+
+  await page.goto(appPaths.clubJoin({ inviteCode: 'FNV0019999' })); // too long: not a code
+  await expect(page.getByRole('heading', { name: 'Cellar Clubs' })).toBeVisible();
+  await expect(codeField).toHaveCount(0);
+});
+
+test('leaving a club invite for the Clubs tab closes its join form', async ({ browser }) => {
+  const page = await signIn(browser, 'player3@test.com');
+  await page.goto(appPaths.clubJoin({ inviteCode: 'FNV001' }));
+  await expect(page.getByPlaceholder('e.g. A7K3M2')).toHaveValue('FNV001');
+
+  await page.getByRole('navigation').getByText('Clubs').click();
+
+  await expect(page).toHaveURL((url) => url.pathname === '/clubs' && url.search === '');
+  await expect(page.getByPlaceholder('e.g. A7K3M2')).toHaveCount(0);
+});
+
 test("a club's Invite button shares the club join link", async ({ browser }) => {
   const page = await signIn(browser, 'host@test.com');
   const club = await seededClub(page);
@@ -94,9 +127,7 @@ test.describe('a signed-out player who opens a join link', () => {
   async function logInFromSplash(page, email) {
     await expect(page).toHaveURL(/\/auth$/);
     await page.getByRole('button', { name: 'Already playing? Log in' }).click();
-    await page.locator('input[type="email"]').fill(email);
-    await page.locator('input[type="password"]').fill(PASSWORD);
-    await page.getByRole('button', { name: /sign in/i }).click();
+    await fillLogin(page, email);
   }
 
   test('lands on the game join, with its code, after logging in', async ({ page }) => {
@@ -127,9 +158,26 @@ test.describe('a signed-out player who opens a join link', () => {
     await signUp(page, { name: 'Link User', email: `link${Date.now()}@test.com` });
     await page.getByText('[Dev] Skip verification').click();
     await expect(page).toHaveURL(/\/auth\/notifications/);
+    // Straight away, as a quick player would: age verification must not bring them back here
     await page.getByRole('button', { name: 'Next' }).click();
 
     await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === link);
+    await page.waitForTimeout(2000); // longer than age verification's own move-on delay
+    await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === link);
+  });
+
+  test('is never sent off the app by a stored return path', async ({ page }) => {
+    const errors = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await page.goto('/auth/login');
+    const appHost = new URL(page.url()).host;
+    await page.evaluate(() => sessionStorage.setItem('cin_return_path', '//example.org/phish'));
+
+    await fillLogin(page, 'player2@test.com');
+
+    // Home, on the app, and without the browser having to refuse a move to another site
+    await expect(page).toHaveURL((url) => url.host === appHost && url.pathname === '/');
+    expect(errors).toEqual([]);
   });
 
   test('is not sent back to it on a later, ordinary sign-in', async ({ page }) => {
@@ -141,9 +189,7 @@ test.describe('a signed-out player who opens a join link', () => {
     await page.evaluate(() => sessionStorage.removeItem('cin_access_token'));
     await page.evaluate(() => sessionStorage.removeItem('cin_refresh_token'));
     await page.goto('/auth/login');
-    await page.locator('input[type="email"]').fill('player2@test.com');
-    await page.locator('input[type="password"]').fill(PASSWORD);
-    await page.getByRole('button', { name: /sign in/i }).click();
+    await fillLogin(page, 'player2@test.com');
 
     await expect(page).toHaveURL((url) => url.pathname === '/');
   });

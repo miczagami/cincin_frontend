@@ -55,8 +55,9 @@ registerRoute(apiRoute(/^\/bottles\/[^/]+\/cache/i), new CacheFirst({
   plugins: [new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * DAY }), new CacheableResponsePlugin({ statuses: [0, 200] })],
 }));
 
-// Profile and palate: fresh when online, cached copy when offline
-registerRoute(apiRoute(/^\/(palate|users\/me)/i), new NetworkFirst({
+// Profile and palate: fresh when online, cached copy when offline. Only the profile itself: the
+// player's data export and other /users/me/... calls stay in the shorter-lived API cache.
+registerRoute(apiRoute(/^\/(palate\/|users\/me$)/i), new NetworkFirst({
   cacheName: 'profile-cache',
   networkTimeoutSeconds: 5,
   plugins: [new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: DAY }), new CacheableResponsePlugin({ statuses: [0, 200] })],

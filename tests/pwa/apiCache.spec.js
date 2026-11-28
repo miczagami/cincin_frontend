@@ -67,6 +67,10 @@ test("the player's profile and palate are kept in the profile cache", async ({ a
   expect(await cachesHolding(page, `${API}/api/palate/profile`)).toEqual(['profile-cache']);
 });
 
+test("the player's data export is not kept with the profile, which outlives it", async ({ app: page }) => {
+  expect(await cachesHolding(page, `${API}/api/users/me/export`)).toEqual(['api-cache']);
+});
+
 test('other API calls are kept in the general API cache', async ({ app: page }) => {
   expect(await cachesHolding(page, `${API}/api/clubs`)).toEqual(['api-cache']);
 });

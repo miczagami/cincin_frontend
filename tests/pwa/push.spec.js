@@ -8,9 +8,10 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { test, expect } from '@playwright/test';
 import { signIn, PASSWORD } from '../e2e/helpers';
+import { servePreview } from './helpers';
 import { PWA_FIREBASE_ENV, PWA_OUT_DIR } from '../../playwright.config.js';
 
 const PLACEHOLDERS = /YOUR_FIREBASE|YOUR_SENDER_ID|YOUR_VAPID_KEY|YOUR_APP_ID|your-project/;
@@ -109,21 +110,8 @@ test.describe('a build without Firebase config', () => {
   });
 
   test('runs with push turned off, and its worker still serves the app', async ({ browser, request }) => {
-    const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--outDir', outDir, '--port', String(port), '--strictPort'], { stdio: ['ignore', 'pipe', 'pipe'] });
+    const server = await servePreview(outDir, port);
     try {
-      // Wait for this server to say it is serving the port. If the port is taken it exits instead,
-      // and the test fails rather than run against whatever already holds the port.
-      await new Promise((resolve, reject) => {
-        let output = '';
-        const giveUp = setTimeout(() => reject(new Error(`vite preview did not start: ${output}`)), 20_000);
-        server.stdout.on('data', (chunk) => {
-          output += chunk;
-          // eslint-disable-next-line no-control-regex
-          if (output.replace(/\x1b\[[0-9;]*m/g, '').includes(`localhost:${port}`)) { clearTimeout(giveUp); resolve(); }
-        });
-        server.stderr.on('data', (chunk) => { output += chunk; });
-        server.once('exit', (code) => { clearTimeout(giveUp); reject(new Error(`vite preview exited (code ${code}): ${output}`)); });
-      });
       const origin = `http://localhost:${port}`;
       const context = await signedInBrowser(browser, request, origin);
       const page = await context.newPage();

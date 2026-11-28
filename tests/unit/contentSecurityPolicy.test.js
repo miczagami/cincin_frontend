@@ -49,3 +49,14 @@ test("images may come from any https host (bottle and avatar URLs from the API),
   const images = sources(contentSecurityPolicy({}), 'img-src');
   for (const source of ["'self'", 'https:', 'data:', 'blob:']) assert.ok(images?.includes(source), `img-src: ${images}`);
 });
+
+test('a VITE_API_URL that is not a full URL stops the build with an error that names it', () => {
+  assert.throws(() => contentSecurityPolicy({ apiUrl: 'api.playcincin.com' }),
+    (error) => ['VITE_API_URL', '"api.playcincin.com"', 'https://'].every((part) => error.message.includes(part)));
+});
+
+test('a socket URL given as wss:// also allows its https:// origin, for Socket.io polling', () => {
+  const connect = sources(contentSecurityPolicy({ wsUrl: 'wss://api.playcincin.com' }), 'connect-src');
+  assert.ok(connect?.includes('https://api.playcincin.com'), `connect-src: ${connect}`);
+  assert.ok(connect?.includes('wss://api.playcincin.com'), `connect-src: ${connect}`);
+});

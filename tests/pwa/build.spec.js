@@ -3,6 +3,7 @@
  * a domain CinCin may not own, is left anywhere in the app.
  */
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { test, expect } from '@playwright/test';
 import { PWA_OUT_DIR } from '../../playwright.config.js';
@@ -43,4 +44,13 @@ test('every page the site serves, deep links included, carries the report-only C
 
 test("the built headers file keeps the cache rules", () => {
   expect(headerRules().find((rule) => rule.path === '/assets/*')?.headers).toContainEqual({ name: 'Cache-Control', value: 'public, max-age=31536000, immutable' });
+});
+
+test("index.html changes with the policy, so an installed app's worker re-fetches it with the new header", () => {
+  // The worker serves every page from its precached index.html, with the headers it was fetched with:
+  // only a new index.html (a new precache revision) brings an installed app a new policy
+  const policyRule = headerRules().find((rule) => rule.headers.some((header) => /^Content-Security-Policy/.test(header.name)));
+  const header = policyRule.headers.find((h) => /^Content-Security-Policy/.test(h.name));
+  const fingerprint = createHash('sha256').update(`${header.name}: ${header.value}`).digest('base64');
+  expect(fs.readFileSync(path.join(PWA_OUT_DIR, 'index.html'), 'utf8')).toContain(fingerprint);
 });

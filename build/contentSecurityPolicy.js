@@ -5,6 +5,15 @@
  */
 import { createHash } from 'node:crypto';
 
+/** `url` parsed, or an error that says which build variable is wrong and what it should be. */
+function parseUrl(name, url) {
+  try {
+    return new URL(url);
+  } catch {
+    throw new Error(`${name} must be a full URL, such as https://api.playcincin.com (got "${url}")`);
+  }
+}
+
 /**
  * The policy for a build whose API is at `apiUrl` and socket at `wsUrl` (VITE_API_URL,
  * VITE_WS_URL), and whose index.html carries the `inlineStyles` (the text of each <style>).
@@ -13,9 +22,12 @@ export function contentSecurityPolicy({ apiUrl, wsUrl, inlineStyles = [] } = {})
   // Firebase Cloud Messaging: registering for push (installations, then the token)
   const connect = ["'self'", 'https://firebaseinstallations.googleapis.com', 'https://fcmregistrations.googleapis.com'];
   // Unset, the app calls its own origin ('self'): VITE_API_URL's /api, or the page's own
-  for (const url of [apiUrl, wsUrl].filter(Boolean)) {
-    const { origin, host, protocol } = new URL(url);
-    connect.push(origin, `${protocol === 'https:' ? 'wss' : 'ws'}://${host}`);
+  for (const [name, url] of [['VITE_API_URL', apiUrl], ['VITE_WS_URL', wsUrl]]) {
+    if (!url) continue;
+    // Socket.io polls over http(s), then upgrades to ws(s): either form of the URL allows both
+    const { host, protocol } = parseUrl(name, url);
+    const secure = protocol === 'https:' || protocol === 'wss:';
+    connect.push(`${secure ? 'https' : 'http'}://${host}`, `${secure ? 'wss' : 'ws'}://${host}`);
   }
   // Only these exact <style> blocks, so an injected one is reported
   const styleHashes = inlineStyles.map((css) => `'sha256-${createHash('sha256').update(css).digest('base64')}'`);

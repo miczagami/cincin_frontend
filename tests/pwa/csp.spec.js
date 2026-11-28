@@ -89,6 +89,10 @@ test('the installed app (its worker, push and an offline reload) raises no CSP r
   await page.reload();
   await push;
   expect(await controllingWorker(page)).toBe('/sw.js');
+  // The worker answers pages from its precached index.html: they carry the policy too
+  const served = await page.goto('/clubs/any-club');
+  expect(served.fromServiceWorker()).toBe(true);
+  expect(served.headers()['content-security-policy-report-only']).toContain("default-src 'self'");
 
   await page.context().setOffline(true);
   await page.goto('/profile');

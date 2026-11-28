@@ -13,6 +13,12 @@ for, how to check it after a deploy, and how to move it to enforcing mode.
 - **The header:** `vite.config.js` appends it to the built `_headers` file as the
   `Content-Security-Policy-Report-Only` header of one rule for `/*`. The cache rules in
   `public/_headers` stay as they are.
+- **Installed apps:** the service worker answers every page from its precached `index.html`,
+  with the headers that copy was fetched with. So `vite.config.js` also writes a fingerprint of the
+  header into `index.html` (`<meta name="cincin-csp">`). Any change to the policy, or to
+  report-only/enforcing, then changes `index.html`, and installed apps fetch it again, with the
+  new header, when their worker updates. Without it, a header-only change would reach new visitors
+  but never installed apps.
 - **Locally:** `vite preview` sends the same header, so the PWA tests run under it.
 - **Vercel:** `vercel.json` doesn't carry it. The app moves to Sevalla (cincin_backend
   `documentation/DEPLOYMENT-SEVALLA.md`), and Vercel goes at the end of that move.
@@ -53,7 +59,9 @@ Both should print the policy.
 | `img-src` | `'self'`, `https:`, `data:`, `blob:` | Bottle and avatar images are URLs from the API, on hosts nothing fixes. Scan previews and share cards are the app's own `blob:` and `data:` URLs. |
 
 `tests/pwa/csp.spec.js` checks that signing up, scanning and playing, Settings and the installed
-app raise no reports under this policy.
+app raise no reports in the page under this policy, and that pages the worker serves carry it. It
+doesn't see the worker's own console: the worker's fetches (the API, through Workbox) were checked
+by hand for #41, as was a multi-device game over `wss://`.
 
 ## Reports
 
@@ -81,6 +89,7 @@ weeks after launch.
 
    Consider narrowing `img-src` to the image hosts the reports show.
 4. In `vite.config.js`, change `CSP_HEADER` to `Content-Security-Policy`. Deploy, check the two
-   `curl` lines above, and run the main flows on the deployed app.
+   `curl` lines above, and run the main flows on the deployed app. Installed apps pick the change
+   up when their worker updates, usually on their next visit or the one after (see "Installed apps").
 5. If something breaks, change it back to report-only and redeploy. Sevalla's **Rollback** of the
    static site does the same.

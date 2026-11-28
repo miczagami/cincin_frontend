@@ -3,6 +3,7 @@
  */
 
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -17,13 +18,22 @@ const CSP_HEADER = 'Content-Security-Policy-Report-Only';
  * fallback in _redirects get it too. See documentation/CONTENT-SECURITY-POLICY.md.
  */
 function contentSecurityPolicyHeader(policy) {
+  const header = `${CSP_HEADER}: ${policy}`;
   return {
     name: 'content-security-policy-header',
     apply: 'build',
+    // An installed app's worker serves every page from its precached index.html, with the headers it
+    // was fetched with. A fingerprint of the header makes index.html change with it, so the worker
+    // fetches it again, with the new header, whenever the policy (or report-only/enforcing) changes.
+    transformIndexHtml: () => [{
+      tag: 'meta',
+      attrs: { name: 'cincin-csp', content: createHash('sha256').update(header).digest('base64') },
+      injectTo: 'head',
+    }],
     writeBundle({ dir }) {
       const headersFile = path.join(dir, '_headers');
       const rules = fs.readFileSync(headersFile, 'utf8'); // public/_headers, copied in
-      fs.writeFileSync(headersFile, `${rules.trimEnd()}\n\n/*\n  ${CSP_HEADER}: ${policy}\n`);
+      fs.writeFileSync(headersFile, `${rules.trimEnd()}\n\n/*\n  ${header}\n`);
     },
   };
 }

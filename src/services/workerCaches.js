@@ -15,12 +15,19 @@ async function deleteCaches(names) {
   await Promise.all(names.map((name) => caches.delete(name)));
 }
 
-/** Empties the caches holding the signed-in player's own API responses (on logout). */
+/** The message the page sends the worker when a player leaves (sw.js). */
+export const PLAYER_LEFT = 'PLAYER_LEFT';
+
+/**
+ * A player is leaving (logout): empties their caches, and tells the worker not to cache any of
+ * their responses still on the way, which would otherwise fill the caches again.
+ */
 export function clearPlayerCaches() {
+  navigator.serviceWorker?.controller?.postMessage({ type: PLAYER_LEFT });
   return deleteCaches([WORKER_CACHES.profile, WORKER_CACHES.api]);
 }
 
-/** Empties every one of them (Settings' Clear cache). */
+/** Empties every one of the worker's API caches (Settings' Clear cache). */
 export function clearWorkerCaches() {
   return deleteCaches(Object.values(WORKER_CACHES));
 }

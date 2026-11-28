@@ -75,6 +75,11 @@ test('other API calls are kept in the general API cache', async ({ app: page }) 
   expect(await cachesHolding(page, `${API}/api/clubs`)).toEqual(['api-cache']);
 });
 
+test('an API call that fails is not kept', async ({ app: page }) => {
+  await page.context().route(`${API}/api/clubs/missing`, (route) => route.fulfill({ status: 404, json: { error: 'Not found' }, headers: { 'access-control-allow-origin': '*' } }));
+  expect(await cachesHolding(page, `${API}/api/clubs/missing`)).toEqual([]);
+});
+
 test("another service's API is never cached", async ({ app: page }) => {
   expect(await cachesHolding(page, `${OTHER_API}/api/clubs`)).toEqual([]);
 });

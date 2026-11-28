@@ -21,7 +21,7 @@ import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw';
 import { firebaseConfig, firebaseConfigured } from './services/firebaseConfig';
 import { API_BASE_URL } from './services/apiBaseUrl';
 import { isCinCinApiRequest } from './utils/apiRequest';
-import { WORKER_CACHES } from './services/workerCaches';
+import { WORKER_CACHES, PLAYER_LEFT } from './services/workerCaches';
 
 // ─── Offline caching ───
 
@@ -41,6 +41,18 @@ const DAY = 86400;
 // cross-origin URL from its first character. No other service's API is cached on the device
 // (such as Onfido's identity checks).
 const API_BASE = new URL(API_BASE_URL, self.location.origin);
+// A player who logs out takes their API responses with them, including any still on the way: a
+// response to a request made before the page said they left (PLAYER_LEFT) is not cached
+let playerVisit = 0;
+const onlyThisPlayersVisit = {
+  requestWillFetch: async ({ request, state }) => { state.visit = playerVisit; return request; },
+  cacheWillUpdate: async ({ response, state }) => (state.visit === playerVisit ? response : null),
+};
+// The page empties the caches themselves (services/workerCaches.js)
+self.addEventListener('message', (event) => {
+  if (event.data?.type === PLAYER_LEFT) playerVisit += 1;
+});
+
 /** Matches CinCin API calls whose path under the API base matches `path` (any path without one). */
 const apiRoute = (path) => ({ url }) => isCinCinApiRequest(url, API_BASE, path);
 
@@ -61,14 +73,15 @@ registerRoute(apiRoute(/^\/bottles\/[^/]+\/cache/i), new CacheFirst({
 registerRoute(apiRoute(/^\/(palate\/|users\/me$)/i), new NetworkFirst({
   cacheName: WORKER_CACHES.profile,
   networkTimeoutSeconds: 5,
-  plugins: [new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: DAY }), new CacheableResponsePlugin({ statuses: [0, 200] })],
+  plugins: [new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: DAY }), new CacheableResponsePlugin({ statuses: [0, 200] }), onlyThisPlayersVisit],
 }));
 
 // Other API calls
 registerRoute(apiRoute(), new NetworkFirst({
   cacheName: WORKER_CACHES.api,
   networkTimeoutSeconds: 5,
-  plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 3600 })],
+  // Successful responses only, as Workbox caches by default when no plugin decides
+  plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 3600 }), new CacheableResponsePlugin({ statuses: [200] }), onlyThisPlayersVisit],
 }));
 
 // Images

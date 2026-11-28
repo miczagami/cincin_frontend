@@ -114,3 +114,46 @@ test('Clear cache also empties the bottles saved on the device for offline play'
   await expect(cachedBottles).toHaveText(/^Cached bottles\s*0$/);
   await page.context().close();
 });
+
+test("a player's responses still on their way when they log out are not kept", async ({ browser }) => {
+  const page = await signIn(browser, 'host@test.com');
+  await controllingWorker(page);
+  await page.goto('/settings');
+  // One for each of the player's caches (profile-cache, api-cache)
+  const late = ['/api/palate/progress', '/api/clubs'];
+  // The server answers while the player is signed in, but the answers only reach the worker after they log out
+  let deliver;
+  const delivered = new Promise((resolve) => { deliver = resolve; });
+  const reachedServer = [];
+  const answeredWorker = [];
+  for (const path of late) {
+    let reached;
+    reachedServer.push(new Promise((resolve) => { reached = resolve; }));
+    let answered;
+    answeredWorker.push(new Promise((resolve) => { answered = resolve; }));
+    await page.context().route(`**${path}`, async (route) => {
+      const response = await route.fetch();
+      reached(response.status());
+      await delivered;
+      await route.fulfill({ response });
+      answered();
+    });
+  }
+  await page.evaluate((late) => {
+    const headers = { Authorization: `Bearer ${sessionStorage.getItem('cin_access_token')}` };
+    for (const path of late) fetch(path, { headers });
+  }, late);
+  expect(await Promise.all(reachedServer)).toEqual([200, 200]);
+
+  await page.getByRole('button', { name: 'Log Out' }).click();
+  await expect(page.getByRole('button', { name: 'Get Started' })).toBeVisible();
+  deliver();
+  await Promise.all(answeredWorker);
+  // Workbox writes the cache after it answers the page
+  await page.waitForTimeout(1000);
+  // Their answers don't go through setOffline
+  await page.context().unrouteAll();
+
+  expect(await servedOffline(page, late)).toEqual([]);
+  await page.context().close();
+});

@@ -47,10 +47,18 @@ let playerVisit = 0;
 const onlyThisPlayersVisit = {
   requestWillFetch: async ({ request, state }) => { state.visit = playerVisit; return request; },
   cacheWillUpdate: async ({ response, state }) => (state.visit === playerVisit ? response : null),
+  // A response that passed the check above just before PLAYER_LEFT arrived can be written after
+  // the caches were emptied: take it out again
+  cacheDidUpdate: async ({ cacheName, request, state }) => {
+    if (state.visit !== playerVisit) await (await caches.open(cacheName)).delete(request);
+  },
 };
-// The page empties the caches themselves (services/workerCaches.js)
+// The page empties the caches too (services/workerCaches.js); the worker does so as well, after
+// the count has moved on, so a write that was under way when the page did is not left behind
 self.addEventListener('message', (event) => {
-  if (event.data?.type === PLAYER_LEFT) playerVisit += 1;
+  if (event.data?.type !== PLAYER_LEFT) return;
+  playerVisit += 1;
+  event.waitUntil(Promise.all([WORKER_CACHES.profile, WORKER_CACHES.api].map((name) => caches.delete(name))));
 });
 
 /** Matches CinCin API calls whose path under the API base matches `path` (any path without one). */

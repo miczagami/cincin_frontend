@@ -7,11 +7,15 @@ import { createHash } from 'node:crypto';
 
 /** `url` parsed, or an error that says which build variable is wrong and what it should be. */
 function parseUrl(name, url) {
+  let parsed;
   try {
-    return new URL(url);
-  } catch {
+    parsed = new URL(url);
+  } catch { /* reported below */ }
+  // "localhost:4000" parses too, with "localhost:" as its scheme
+  if (!['http:', 'https:', 'ws:', 'wss:'].includes(parsed?.protocol)) {
     throw new Error(`${name} must be a full URL, such as https://api.playcincin.com (got "${url}")`);
   }
+  return parsed;
 }
 
 /**

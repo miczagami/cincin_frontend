@@ -60,3 +60,8 @@ test('a socket URL given as wss:// also allows its https:// origin, for Socket.i
   assert.ok(connect?.includes('https://api.playcincin.com'), `connect-src: ${connect}`);
   assert.ok(connect?.includes('wss://api.playcincin.com'), `connect-src: ${connect}`);
 });
+
+test('a host and port with no scheme (localhost:4000) is not a full URL either', () => {
+  assert.throws(() => contentSecurityPolicy({ wsUrl: 'localhost:4000' }),
+    (error) => ['VITE_WS_URL', '"localhost:4000"'].every((part) => error.message.includes(part)));
+});

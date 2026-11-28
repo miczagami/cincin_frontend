@@ -71,7 +71,9 @@ test('when the feed request fails, Discover falls back to the empty state', asyn
 
 test('Discover previews at most two feed items', async ({ browser }) => {
   const page = await signIn(browser, 'player2@test.com');
-  const items = ['First', 'Second', 'Third'].map((title, i) => ({ ...SPONSORED, id: `sp-${i}`, title }));
+  const items = ['First', 'Second', 'Third'].map((title, i) => ({
+    id: `org-${i}`, type: 'trending', isSponsored: false, title, subtitle: null, imageUrl: null, bottle: null, linkUrl: null, data: null,
+  }));
   await page.route('**/api/commerce/feed*', (route) => route.fulfill({ json: { items, total: 3 } }));
   await page.goto('/');
 
@@ -205,4 +207,29 @@ test('Recent Games lists only finished games, never one left in the lobby or aba
   await expect(recentGames(page).getByRole('listitem')).toHaveCount(3);
   await expect(recentGames(page).getByText('Three')).toBeVisible();
   await expect(recentGames(page).getByText(/Still in the lobby|Still being played/)).toHaveCount(0);
+});
+
+test('Discover previews at most one sponsored tasting, then organic items', async ({ browser }) => {
+  const page = await signIn(browser, 'player2@test.com');
+  const organic = (title) => ({
+    id: title, type: 'trending', isSponsored: false, title, subtitle: null, imageUrl: null, bottle: null, linkUrl: null, data: null,
+  });
+  const items = [organic('Trending One'), { ...SPONSORED, id: 'sp-a', title: 'Ad A' }, { ...SPONSORED, id: 'sp-b', title: 'Ad B' }, organic('Trending Two')];
+  await page.route('**/api/commerce/feed*', (route) => route.fulfill({ json: { items, total: 4 } }));
+  await page.goto('/');
+
+  await expect(discover(page).getByText('Ad A', { exact: true })).toBeVisible();
+  await expect(discover(page).getByText('Trending One', { exact: true })).toBeVisible();
+  await expect(discover(page).getByText('Ad B', { exact: true })).toHaveCount(0);
+  await expect(discover(page).getByText('Sponsored', { exact: true })).toHaveCount(1);
+});
+
+test('with only sponsored tastings in the feed, Discover still previews just one', async ({ browser }) => {
+  const page = await signIn(browser, 'player2@test.com');
+  const items = ['Ad A', 'Ad B'].map((title, i) => ({ ...SPONSORED, id: `sp-${i}`, title }));
+  await page.route('**/api/commerce/feed*', (route) => route.fulfill({ json: { items, total: 2 } }));
+  await page.goto('/');
+
+  await expect(discover(page).getByText('Ad A', { exact: true })).toBeVisible();
+  await expect(discover(page).getByText('Ad B', { exact: true })).toHaveCount(0);
 });

@@ -23,11 +23,13 @@ export default function HomePage() {
   useEffect(() => {
     let live = true;
     // Read a full page (the API's default): it places sponsored tastings only every 4th item,
-    // so a short page could leave them out. Sponsored tastings come first in the preview.
+    // so a short page could leave them out. The preview leads with at most one sponsored
+    // tasting, then fills with organic items; the rest are on /discover.
     commerce.getFeed()
       .then((data) => {
-        const sponsoredFirst = [...data.items.filter((i) => i.isSponsored), ...data.items.filter((i) => !i.isSponsored)];
-        if (live) setDiscoverItems(sponsoredFirst.slice(0, DISCOVER_PREVIEW));
+        const sponsored = data.items.filter((i) => i.isSponsored).slice(0, 1);
+        const preview = [...sponsored, ...data.items.filter((i) => !i.isSponsored)];
+        if (live) setDiscoverItems(preview.slice(0, DISCOVER_PREVIEW));
       })
       .catch(() => { if (live) setDiscoverItems([]); });
     return () => { live = false; };

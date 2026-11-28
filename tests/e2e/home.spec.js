@@ -15,6 +15,12 @@ test('with nothing in the discovery feed, Discover shows a neutral empty state',
   await expect(discover(page).getByText('Sponsored')).toHaveCount(0);
 });
 
+/** An organic discovery item as GET /commerce/feed sends it. */
+const organic = (title, fields = {}) => ({
+  id: `org-${title}`, type: 'trending', isSponsored: false, title, subtitle: null, imageUrl: null, bottle: null, linkUrl: null, data: null,
+  ...fields,
+});
+
 /** A sponsored tasting as GET /commerce/feed sends it (cincin_backend commerceService). */
 const SPONSORED = {
   id: 'sp-1',
@@ -71,9 +77,7 @@ test('when the feed request fails, Discover falls back to the empty state', asyn
 
 test('Discover previews at most two feed items', async ({ browser }) => {
   const page = await signIn(browser, 'player2@test.com');
-  const items = ['First', 'Second', 'Third'].map((title, i) => ({
-    id: `org-${i}`, type: 'trending', isSponsored: false, title, subtitle: null, imageUrl: null, bottle: null, linkUrl: null, data: null,
-  }));
+  const items = ['First', 'Second', 'Third'].map((title) => organic(title));
   await page.route('**/api/commerce/feed*', (route) => route.fulfill({ json: { items, total: 3 } }));
   await page.goto('/');
 
@@ -172,12 +176,10 @@ test('Recent Games lists at most the three latest games', async ({ browser }) =>
 test('a sponsored tasting shows on Home even when organic items come first in the feed', async ({ browser }) => {
   const page = await signIn(browser, 'player2@test.com');
   // The backend puts a sponsored tasting at every 4th place and then cuts the list to `limit`
-  const organic = ['Trending One', 'Trending Two', 'Trending Three', 'Trending Four'].map((title, i) => ({
-    id: `org-${i}`, type: 'trending', isSponsored: false, title, subtitle: null, imageUrl: null, bottle: null, linkUrl: null, data: null,
-  }));
+  const organicItems = ['Trending One', 'Trending Two', 'Trending Three', 'Trending Four'].map((title) => organic(title));
   const feedRequest = page.waitForRequest('**/api/commerce/feed*');
   await page.route('**/api/commerce/feed*', (route) => route.fulfill({
-    json: { items: [...organic, SPONSORED], total: 5 },
+    json: { items: [...organicItems, SPONSORED], total: 5 },
   }));
   await page.goto('/');
 
@@ -189,10 +191,7 @@ test('a sponsored tasting shows on Home even when organic items come first in th
 
 test('organic discovery items show on Home without a Sponsored label', async ({ browser }) => {
   const page = await signIn(browser, 'player2@test.com');
-  const trending = {
-    id: 'org-1', type: 'trending', isSponsored: false, title: 'Trending this week', subtitle: 'What players are tasting',
-    imageUrl: null, bottle: null, linkUrl: null, data: null,
-  };
+  const trending = organic('Trending this week', { subtitle: 'What players are tasting' });
   await page.route('**/api/commerce/feed*', (route) => route.fulfill({ json: { items: [trending], total: 1 } }));
   await page.goto('/');
 
@@ -222,9 +221,6 @@ test('Recent Games lists only finished games, never one left in the lobby or aba
 
 test('Discover previews at most one sponsored tasting, then organic items', async ({ browser }) => {
   const page = await signIn(browser, 'player2@test.com');
-  const organic = (title) => ({
-    id: title, type: 'trending', isSponsored: false, title, subtitle: null, imageUrl: null, bottle: null, linkUrl: null, data: null,
-  });
   const items = [organic('Trending One'), { ...SPONSORED, id: 'sp-a', title: 'Ad A' }, { ...SPONSORED, id: 'sp-b', title: 'Ad B' }, organic('Trending Two')];
   await page.route('**/api/commerce/feed*', (route) => route.fulfill({ json: { items, total: 4 } }));
   await page.goto('/');

@@ -4,7 +4,7 @@
  * against a freshly seeded database — see tests/e2e/README.md.
  */
 import { test, expect } from '@playwright/test';
-import { signIn, signUp, pickBottle, emailedLink, currentUserId, PASSWORD } from './helpers';
+import { signIn, signUp, pickBottle, emailedLink, currentUserId, PASSWORD, api } from './helpers';
 
 test('login survives a page reload', async ({ browser }) => {
   const page = await signIn(browser, 'host@test.com');
@@ -38,9 +38,7 @@ test('signup → age verification (dev) → onboarding', async ({ page }) => {
   await page.getByText('[Dev] Skip verification').click();
   await expect(page).toHaveURL(/\/auth\/notifications/);
   await page.reload();
-  const me = await page.evaluate(async () => (await fetch('/api/users/me', {
-    headers: { Authorization: `Bearer ${sessionStorage.getItem('cin_access_token')}` },
-  })).json());
+  const me = await api(page, 'GET', '/users/me');
   expect(me.ageVerified).toBe(true);
 });
 

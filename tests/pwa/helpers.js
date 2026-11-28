@@ -1,5 +1,26 @@
 // Shared by the pwa specs
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
+import { PWA_FIREBASE_ENV } from '../../playwright.config.js';
+
+/**
+ * A production build in `outDir` with no Firebase project (so no push), plus any `env` given.
+ * The Firebase values are blank rather than unset: Vite would fill unset ones from a developer's .env.
+ */
+export function buildWithoutFirebase(outDir, env = {}) {
+  const blankFirebase = Object.fromEntries(Object.keys(PWA_FIREBASE_ENV).map((name) => [name, '']));
+  execFileSync('npx', ['vite', 'build', '--outDir', outDir], { env: { ...process.env, ...blankFirebase, ...env }, stdio: 'ignore' });
+}
+
+/** The script URL of the worker controlling the page, once one does. */
+export async function controllingWorker(page) {
+  return page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+    if (!navigator.serviceWorker.controller) {
+      await new Promise((resolve) => navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true }));
+    }
+    return new URL(navigator.serviceWorker.controller.scriptURL).pathname;
+  });
+}
 
 /**
  * `vite preview` serving the build in `outDir` on `port`, once it says it is serving the port.

@@ -8,10 +8,9 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { test, expect } from '@playwright/test';
 import { signIn, PASSWORD } from '../e2e/helpers';
-import { servePreview } from './helpers';
+import { servePreview, buildWithoutFirebase, controllingWorker } from './helpers';
 import { PWA_FIREBASE_ENV, PWA_OUT_DIR } from '../../playwright.config.js';
 
 const PLACEHOLDERS = /YOUR_FIREBASE|YOUR_SENDER_ID|YOUR_VAPID_KEY|YOUR_APP_ID|your-project/;
@@ -54,17 +53,6 @@ async function signedInBrowser(browser, request, origin) {
   return context;
 }
 
-/** The script URL of the worker controlling the page, once one does. */
-async function controllingWorker(page) {
-  return page.evaluate(async () => {
-    await navigator.serviceWorker.ready;
-    if (!navigator.serviceWorker.controller) {
-      await new Promise((resolve) => navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true }));
-    }
-    return new URL(navigator.serviceWorker.controller.scriptURL).pathname;
-  });
-}
-
 test('the app keeps one service worker, and it still serves the app offline', async ({ browser }) => {
   const page = await signInWithPushAllowed(browser);
 
@@ -100,9 +88,7 @@ test.describe('a build without Firebase config', () => {
 
   test.beforeAll(() => {
     test.setTimeout(180_000);
-    // Blank rather than unset: Vite would fill unset variables from a developer's .env
-    const env = { ...process.env, ...Object.fromEntries(Object.keys(PWA_FIREBASE_ENV).map((name) => [name, ''])) };
-    execFileSync('npx', ['vite', 'build', '--outDir', outDir], { env, stdio: 'ignore' });
+    buildWithoutFirebase(outDir);
   });
 
   test('ships no placeholders', () => {

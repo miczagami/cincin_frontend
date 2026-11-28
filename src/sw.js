@@ -40,29 +40,30 @@ const DAY = 86400;
 // cross-origin URL from its first character. No other service's API is cached on the device
 // (such as Onfido's identity checks).
 const API_BASE = new URL(API_BASE_URL, self.location.origin);
-const apiPath = (path) => ({ url }) => isCinCinApiRequest(url, API_BASE, path);
+/** Matches CinCin API calls whose path under the API base matches `path` (any path without one). */
+const apiRoute = (path) => ({ url }) => isCinCinApiRequest(url, API_BASE, path);
 
 // Taxonomy data changes rarely: serve from cache, revalidate in the background
-registerRoute(apiPath(/^\/scan\/taxonomy/i), new StaleWhileRevalidate({
+registerRoute(apiRoute(/^\/scan\/taxonomy/i), new StaleWhileRevalidate({
   cacheName: 'taxonomy-cache',
   plugins: [new ExpirationPlugin({ maxEntries: 10, maxAgeSeconds: 7 * DAY }), new CacheableResponsePlugin({ statuses: [0, 200] })],
 }));
 
 // Bottles fetched for offline play; their tasting notes don't change once published
-registerRoute(apiPath(/^\/bottles\/[^/]+\/cache/i), new CacheFirst({
+registerRoute(apiRoute(/^\/bottles\/[^/]+\/cache/i), new CacheFirst({
   cacheName: 'bottle-cache',
   plugins: [new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * DAY }), new CacheableResponsePlugin({ statuses: [0, 200] })],
 }));
 
 // Profile and palate: fresh when online, cached copy when offline
-registerRoute(apiPath(/^\/(palate|users\/me)/i), new NetworkFirst({
+registerRoute(apiRoute(/^\/(palate|users\/me)/i), new NetworkFirst({
   cacheName: 'profile-cache',
   networkTimeoutSeconds: 5,
   plugins: [new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: DAY }), new CacheableResponsePlugin({ statuses: [0, 200] })],
 }));
 
 // Other API calls
-registerRoute(apiPath(), new NetworkFirst({
+registerRoute(apiRoute(), new NetworkFirst({
   cacheName: 'api-cache',
   networkTimeoutSeconds: 5,
   plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 3600 })],

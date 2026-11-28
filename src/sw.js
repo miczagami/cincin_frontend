@@ -21,6 +21,7 @@ import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw';
 import { firebaseConfig, firebaseConfigured } from './services/firebaseConfig';
 import { API_BASE_URL } from './services/apiBaseUrl';
 import { isCinCinApiRequest } from './utils/apiRequest';
+import { WORKER_CACHES } from './services/workerCaches';
 
 // ─── Offline caching ───
 
@@ -45,27 +46,27 @@ const apiRoute = (path) => ({ url }) => isCinCinApiRequest(url, API_BASE, path);
 
 // Taxonomy data changes rarely: serve from cache, revalidate in the background
 registerRoute(apiRoute(/^\/scan\/taxonomy/i), new StaleWhileRevalidate({
-  cacheName: 'taxonomy-cache',
+  cacheName: WORKER_CACHES.taxonomy,
   plugins: [new ExpirationPlugin({ maxEntries: 10, maxAgeSeconds: 7 * DAY }), new CacheableResponsePlugin({ statuses: [0, 200] })],
 }));
 
 // Bottles fetched for offline play; their tasting notes don't change once published
 registerRoute(apiRoute(/^\/bottles\/[^/]+\/cache/i), new CacheFirst({
-  cacheName: 'bottle-cache',
+  cacheName: WORKER_CACHES.bottles,
   plugins: [new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * DAY }), new CacheableResponsePlugin({ statuses: [0, 200] })],
 }));
 
 // Profile and palate: fresh when online, cached copy when offline. Only the profile itself: the
 // player's data export and other /users/me/... calls stay in the shorter-lived API cache.
 registerRoute(apiRoute(/^\/(palate\/|users\/me$)/i), new NetworkFirst({
-  cacheName: 'profile-cache',
+  cacheName: WORKER_CACHES.profile,
   networkTimeoutSeconds: 5,
   plugins: [new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: DAY }), new CacheableResponsePlugin({ statuses: [0, 200] })],
 }));
 
 // Other API calls
 registerRoute(apiRoute(), new NetworkFirst({
-  cacheName: 'api-cache',
+  cacheName: WORKER_CACHES.api,
   networkTimeoutSeconds: 5,
   plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 3600 })],
 }));

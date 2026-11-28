@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { auth as authApi, ageVerify as ageApi, setAuth, clearAuth, getToken } from '../services/api';
+import { clearPlayerCaches } from '../services/workerCaches';
 
 const useAuthStore = create((set, get) => ({
   user: null,
@@ -92,6 +93,8 @@ const useAuthStore = create((set, get) => ({
   logout: async () => {
     try { await authApi.logout(); } catch {}
     clearAuth();
+    // The worker's cached API responses are this player's: the next one on this device mustn't get them
+    try { await clearPlayerCaches(); } catch {}
     set({ user: null, token: null, isAuthenticated: false, ageVerified: false, ageVerifyStatus: null });
   },
 

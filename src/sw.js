@@ -80,8 +80,9 @@ registerRoute(apiRoute(/^\/(palate\/|users\/me$)/i), new NetworkFirst({
 registerRoute(apiRoute(), new NetworkFirst({
   cacheName: WORKER_CACHES.api,
   networkTimeoutSeconds: 5,
-  // Successful responses only, as Workbox caches by default when no plugin decides
-  plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 3600 }), new CacheableResponsePlugin({ statuses: [200] }), onlyThisPlayersVisit],
+  // What NetworkFirst caches by default (successful and opaque responses), which a plugin that
+  // decides what to cache would otherwise replace
+  plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 3600 }), new CacheableResponsePlugin({ statuses: [0, 200] }), onlyThisPlayersVisit],
 }));
 
 // Images

@@ -163,3 +163,34 @@ test('Recent Games lists at most the three latest games', async ({ browser }) =>
   await expect(recentGames(page).getByRole('listitem')).toHaveCount(3);
   await expect(recentGames(page).getByText('Four')).toHaveCount(0);
 });
+
+test('a sponsored tasting shows on Home even when organic items come first in the feed', async ({ browser }) => {
+  const page = await signIn(browser, 'player2@test.com');
+  // The backend puts a sponsored tasting at every 4th place and then cuts the list to `limit`
+  const organic = ['Trending One', 'Trending Two', 'Trending Three', 'Trending Four'].map((title, i) => ({
+    id: `org-${i}`, type: 'trending', isSponsored: false, title, subtitle: null, imageUrl: null, bottle: null, linkUrl: null, data: null,
+  }));
+  const feedRequest = page.waitForRequest('**/api/commerce/feed*');
+  await page.route('**/api/commerce/feed*', (route) => route.fulfill({
+    json: { items: [...organic, SPONSORED], total: 5 },
+  }));
+  await page.goto('/');
+
+  // Asking for fewer than 5 would cut the sponsored slot off a feed with 4 organic items
+  const limit = new URL((await feedRequest).url()).searchParams.get('limit');
+  expect(limit === null || Number(limit) >= 5).toBe(true);
+  await expect(discover(page).getByText('Taste the Coastal Shiraz')).toBeVisible();
+});
+
+test('organic discovery items show on Home without a Sponsored label', async ({ browser }) => {
+  const page = await signIn(browser, 'player2@test.com');
+  const trending = {
+    id: 'org-1', type: 'trending', isSponsored: false, title: 'Trending this week', subtitle: 'What players are tasting',
+    imageUrl: null, bottle: null, linkUrl: null, data: null,
+  };
+  await page.route('**/api/commerce/feed*', (route) => route.fulfill({ json: { items: [trending], total: 1 } }));
+  await page.goto('/');
+
+  await expect(discover(page).getByText('Trending this week')).toBeVisible();
+  await expect(discover(page).getByText('Sponsored', { exact: true })).toHaveCount(0);
+});

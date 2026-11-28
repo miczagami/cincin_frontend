@@ -14,6 +14,10 @@ export const PWA_FIREBASE_ENV = {
 };
 export const PWA_OUT_DIR = 'dist-pwa-test';
 
+// Lets tests answer the service worker's own requests (context.route), as tests/pwa/apiCache.spec.js
+// does for an API on another origin; without it Chromium's worker fetches skip Playwright
+process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS = '1';
+
 export default defineConfig({
   // The flows share one seeded backend database
   fullyParallel: false,

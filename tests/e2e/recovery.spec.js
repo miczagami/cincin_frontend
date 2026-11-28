@@ -109,6 +109,21 @@ test.describe('recovery screen', () => {
     await expect(page).toHaveURL(/\/auth$/);
   });
 
+  test("Sign out empties the player's cached API responses even when the server never answers", async ({ browser }) => {
+    const page = await openBrokenHome(browser);
+    // As the service worker leaves them in a production build (services/workerCaches.js)
+    await page.evaluate(async () => {
+      for (const name of ['profile-cache', 'api-cache']) await (await caches.open(name)).put('/api/users/me', new Response('{}'));
+    });
+    await page.route('**/api/auth/logout', () => {}); // never fulfilled
+
+    await page.getByRole('button', { name: 'Sign out' }).click();
+
+    await expect(page).toHaveURL(/\/auth$/, { timeout: 10_000 });
+    expect(await page.evaluate(() => caches.keys())).not.toEqual(expect.arrayContaining(['profile-cache']));
+    expect(await page.evaluate(() => caches.keys())).not.toEqual(expect.arrayContaining(['api-cache']));
+  });
+
   test('the render error is reported', async ({ page }) => {
     const reportedText = collectReports(page);
     await openBrokenForgotPassword(page);

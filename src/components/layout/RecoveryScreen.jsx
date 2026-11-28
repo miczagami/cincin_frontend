@@ -12,6 +12,7 @@ import Logo from '../brand/Logo';
 import { Button } from '../ui';
 import useAuthStore from '../../context/authStore';
 import { clearAuth } from '../../services/api';
+import { clearPlayerCaches } from '../../services/workerCaches';
 
 // How long Sign out waits for the server before ending the session on this device anyway
 const SIGN_OUT_WAIT_MS = 5000;
@@ -25,6 +26,8 @@ async function signOut() {
     ]);
   } finally {
     clearAuth();
+    // Logout may not have got this far, and loading /auth would cut it off
+    try { await clearPlayerCaches(); } catch { /* signing out matters more */ }
     window.location.assign('/auth');
   }
 }

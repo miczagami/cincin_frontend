@@ -18,6 +18,7 @@ import useSubscriptionStore from '../../context/subscriptionStore';
 import useAuthStore from '../../context/authStore';
 import { users, auth } from '../../services/api';
 import { getCachedBottles, clearBottleCache } from '../../utils/offlineGame';
+import { clearWorkerCaches } from '../../services/workerCaches';
 import useToast from '../../hooks/useToast';
 import { ScreenHeader, Button, Card, Toggle, Input } from '../../components/ui';
 
@@ -225,24 +226,11 @@ export default function SettingsPage() {
   };
 
   // ── Priority 1: Clear Cache ──
+  // The bottles saved for offline play, and every API response the service worker keeps
   const handleClearCache = async () => {
-    if (cachedBottleCount === 0) {
-      toast.info('Cache is already empty.');
-      return;
-    }
     setIsClearingCache(true);
     try {
-      await clearBottleCache();
-
-      // Also clear service worker caches if available
-      if ('caches' in window) {
-        const cacheNames = await caches.keys();
-        await Promise.all(
-          cacheNames
-            .filter((name) => name.startsWith('cincin-') || name.startsWith('workbox-'))
-            .map((name) => caches.delete(name))
-        );
-      }
+      await Promise.all([clearBottleCache(), clearWorkerCaches()]);
 
       setCachedBottleCount(0);
       toast.success('Cache cleared.');

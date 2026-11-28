@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { auth as authApi, ageVerify as ageApi, setAuth, clearAuth, getToken } from '../services/api';
+import { clearPlayerCaches } from '../services/workerCaches';
 
 const useAuthStore = create((set, get) => ({
   user: null,
@@ -90,8 +91,13 @@ const useAuthStore = create((set, get) => ({
   },
 
   logout: async () => {
+    // The worker's cached API responses are this player's: the next one on this device mustn't get
+    // them. Emptied before the server logout, which can hang until the app is closed, and again
+    // after it, for what the app fetched while the player was still signed in
+    try { await clearPlayerCaches(); } catch {}
     try { await authApi.logout(); } catch {}
     clearAuth();
+    try { await clearPlayerCaches(); } catch {}
     set({ user: null, token: null, isAuthenticated: false, ageVerified: false, ageVerifyStatus: null });
   },
 

@@ -19,6 +19,9 @@ import { clientsClaim } from 'workbox-core';
 import { initializeApp } from 'firebase/app';
 import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw';
 import { firebaseConfig, firebaseConfigured } from './services/firebaseConfig';
+import { API_BASE_URL } from './services/apiBaseUrl';
+import { isCinCinApiRequest } from './utils/apiRequest';
+import { WORKER_CACHES, PLAYER_LEFT } from './services/workerCaches';
 
 // ─── Offline caching ───
 
@@ -33,30 +36,61 @@ registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html')));
 
 const DAY = 86400;
 
+// CinCin's API, which in production is on another origin than the app. Its routes match the path
+// under the API base (utils/apiRequest.js): a plain regular expression would only ever match a
+// cross-origin URL from its first character. No other service's API is cached on the device
+// (such as Onfido's identity checks).
+const API_BASE = new URL(API_BASE_URL, self.location.origin);
+// A player who logs out takes their API responses with them, including any still on the way: a
+// response to a request made before the page said they left (PLAYER_LEFT) is not cached
+let playerVisit = 0;
+const onlyThisPlayersVisit = {
+  requestWillFetch: async ({ request, state }) => { state.visit = playerVisit; return request; },
+  cacheWillUpdate: async ({ response, state }) => (state.visit === playerVisit ? response : null),
+  // A response that passed the check above just before PLAYER_LEFT arrived can be written after
+  // the caches were emptied: take it out again
+  cacheDidUpdate: async ({ cacheName, request, state }) => {
+    if (state.visit !== playerVisit) await (await caches.open(cacheName)).delete(request);
+  },
+};
+// The page empties the caches too (services/workerCaches.js); the worker does so as well, after
+// the count has moved on, so a write that was under way when the page did is not left behind
+self.addEventListener('message', (event) => {
+  if (event.data?.type !== PLAYER_LEFT) return;
+  playerVisit += 1;
+  event.waitUntil(Promise.all([WORKER_CACHES.profile, WORKER_CACHES.api].map((name) => caches.delete(name))));
+});
+
+/** Matches CinCin API calls whose path under the API base matches `path` (any path without one). */
+const apiRoute = (path) => ({ url }) => isCinCinApiRequest(url, API_BASE, path);
+
 // Taxonomy data changes rarely: serve from cache, revalidate in the background
-registerRoute(/\/api\/scan\/taxonomy/i, new StaleWhileRevalidate({
-  cacheName: 'taxonomy-cache',
+registerRoute(apiRoute(/^\/scan\/taxonomy/i), new StaleWhileRevalidate({
+  cacheName: WORKER_CACHES.taxonomy,
   plugins: [new ExpirationPlugin({ maxEntries: 10, maxAgeSeconds: 7 * DAY }), new CacheableResponsePlugin({ statuses: [0, 200] })],
 }));
 
 // Bottles fetched for offline play; their tasting notes don't change once published
-registerRoute(/\/api\/bottles\/[^/]+\/cache/i, new CacheFirst({
-  cacheName: 'bottle-cache',
+registerRoute(apiRoute(/^\/bottles\/[^/]+\/cache/i), new CacheFirst({
+  cacheName: WORKER_CACHES.bottles,
   plugins: [new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * DAY }), new CacheableResponsePlugin({ statuses: [0, 200] })],
 }));
 
-// Profile and palate: fresh when online, cached copy when offline
-registerRoute(/\/api\/(palate|users\/me)/i, new NetworkFirst({
-  cacheName: 'profile-cache',
+// Profile and palate: fresh when online, cached copy when offline. Only the profile itself: the
+// player's data export and other /users/me/... calls stay in the shorter-lived API cache.
+registerRoute(apiRoute(/^\/(palate\/|users\/me$)/i), new NetworkFirst({
+  cacheName: WORKER_CACHES.profile,
   networkTimeoutSeconds: 5,
-  plugins: [new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: DAY }), new CacheableResponsePlugin({ statuses: [0, 200] })],
+  plugins: [new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: DAY }), new CacheableResponsePlugin({ statuses: [0, 200] }), onlyThisPlayersVisit],
 }));
 
 // Other API calls
-registerRoute(/^https:\/\/api\./i, new NetworkFirst({
-  cacheName: 'api-cache',
+registerRoute(apiRoute(), new NetworkFirst({
+  cacheName: WORKER_CACHES.api,
   networkTimeoutSeconds: 5,
-  plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 3600 })],
+  // What NetworkFirst caches by default (successful and opaque responses), which a plugin that
+  // decides what to cache would otherwise replace
+  plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 3600 }), new CacheableResponsePlugin({ statuses: [0, 200] }), onlyThisPlayersVisit],
 }));
 
 // Images

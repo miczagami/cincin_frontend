@@ -13,9 +13,10 @@
  */
 
 import axios from 'axios';
+import { API_BASE_URL } from './apiBaseUrl';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api',
+  baseURL: API_BASE_URL,
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });
@@ -38,7 +39,7 @@ function refreshSession() {
       const refreshToken = sessionStorage.getItem('cin_refresh_token');
       if (!refreshToken) throw new Error('No refresh token');
       const { data } = await axios.post(
-        `${import.meta.env.VITE_API_URL || ''}/api/auth/refresh`,
+        `${API_BASE_URL}/auth/refresh`,
         { refreshToken }
       );
       sessionStorage.setItem('cin_access_token', data.accessToken);

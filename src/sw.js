@@ -19,6 +19,8 @@ import { clientsClaim } from 'workbox-core';
 import { initializeApp } from 'firebase/app';
 import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw';
 import { firebaseConfig, firebaseConfigured } from './services/firebaseConfig';
+import { API_BASE_URL } from './services/apiBaseUrl';
+import { isCinCinApiRequest } from './utils/apiRequest';
 
 // ─── Offline caching ───
 
@@ -52,8 +54,10 @@ registerRoute(/\/api\/(palate|users\/me)/i, new NetworkFirst({
   plugins: [new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: DAY }), new CacheableResponsePlugin({ statuses: [0, 200] })],
 }));
 
-// Other API calls
-registerRoute(/^https:\/\/api\./i, new NetworkFirst({
+// Other calls to CinCin's own API. Only CinCin's: other services' APIs (such as Onfido's
+// identity checks) are never cached on the device.
+const API_BASE = new URL(API_BASE_URL, self.location.origin);
+registerRoute(({ url }) => isCinCinApiRequest(url, API_BASE), new NetworkFirst({
   cacheName: 'api-cache',
   networkTimeoutSeconds: 5,
   plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 3600 })],

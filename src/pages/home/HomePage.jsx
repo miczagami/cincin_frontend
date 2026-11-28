@@ -5,10 +5,12 @@ import { Bell, ScanLine, ChevronRight } from 'lucide-react';
 import { Card, Pill } from '../../components/ui';
 import useAuthStore from '../../context/authStore';
 import Logo from '../../components/brand/Logo';
-import { commerce } from '../../services/api';
+import { commerce, games } from '../../services/api';
 
 /** How many discovery-feed items Home previews; the rest are on /discover. */
 const DISCOVER_PREVIEW = 2;
+/** How many of the player's latest games Home lists. */
+const RECENT_GAMES = 3;
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -24,10 +26,16 @@ export default function HomePage() {
     return () => { live = false; };
   }, []);
 
-  const recentGames = [
-    { name: 'Penfolds Bin 389', cat: 'Red · Shiraz/Cab', score: '+8', date: 'Today' },
-    { name: 'Stone & Wood Pacific Ale', cat: 'Beer · Pale Ale', score: '+5', date: 'Yesterday' },
-  ];
+  // Game history is Pro-only: for free players (403) and players with no games, the section hides
+  const [recentGames, setRecentGames] = useState([]);
+
+  useEffect(() => {
+    let live = true;
+    games.history({ limit: RECENT_GAMES })
+      .then((history) => { if (live) setRecentGames(history.slice(0, RECENT_GAMES)); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
 
   return (
     <div className="animate-fade-in">
@@ -54,21 +62,27 @@ export default function HomePage() {
         </Card>
       </div>
 
-      <div className="px-5 mt-6">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="text-base font-display font-bold text-cin-cream">{t('home.recentGames')}</h2>
-          <button className="text-xs text-cin-gold font-body flex items-center gap-0.5">{t('home.seeAll')} <ChevronRight className="w-3 h-3" /></button>
-        </div>
-        {recentGames.map((g, i) => (
-          <Card key={i} interactive className="mb-2 flex justify-between items-center">
-            <div>
-              <div className="text-sm font-semibold text-cin-cream font-body">{g.name}</div>
-              <div className="text-xs text-cin-muted font-body mt-0.5">{g.cat} · {g.date}</div>
-            </div>
-            <div className={`text-base font-display font-extrabold ${parseInt(g.score) > 0 ? 'text-cin-green' : 'text-cin-red'}`}>{g.score}</div>
-          </Card>
-        ))}
-      </div>
+      {recentGames.length > 0 && (
+        <section aria-labelledby="home-recent-games" className="px-5 mt-6">
+          <div className="flex justify-between items-center mb-3">
+            <h2 id="home-recent-games" className="text-base font-display font-bold text-cin-cream">{t('home.recentGames')}</h2>
+            <button className="text-xs text-cin-gold font-body flex items-center gap-0.5">{t('home.seeAll')} <ChevronRight className="w-3 h-3" /></button>
+          </div>
+          <ul>
+            {recentGames.map((g) => (
+              <li key={g.gameId}>
+                <Card interactive className="mb-2 flex justify-between items-center">
+                  <div>
+                    <div className="text-sm font-semibold text-cin-cream font-body">{g.bottle?.name}</div>
+                    <div className="text-xs text-cin-muted font-body mt-0.5">{new Date(g.playedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</div>
+                  </div>
+                  <div className={`text-base font-display font-extrabold ${g.yourScore > 0 ? 'text-cin-green' : 'text-cin-red'}`}>{g.yourScore > 0 ? `+${g.yourScore}` : g.yourScore}</div>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="px-5 mt-6">
         <h2 className="text-base font-display font-bold text-cin-cream mb-3">{t('home.myCellarClub')}</h2>

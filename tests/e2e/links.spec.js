@@ -11,7 +11,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { test, expect } from '@playwright/test';
-import { signIn, signUp, fillLogin } from './helpers';
+import { signIn, signUp, fillLogin, api } from './helpers';
 
 function backendDir() {
   const candidates = [process.env.BACKEND_DIR, 'backend', '../cincin_backend'].filter(Boolean);
@@ -55,15 +55,6 @@ const SCREENS = {
   verifyEmail: (page) => heading(page, 'Verify Email'),
   resetPassword: (page) => heading(page, /reset password|new password/i),
 };
-
-/** Call the API as the signed-in player. */
-function api(page, method, apiPath, body) {
-  return page.evaluate(async ({ method, apiPath, body }) => (await fetch(`/api${apiPath}`, {
-    method,
-    headers: { Authorization: `Bearer ${sessionStorage.getItem('cin_access_token')}`, 'Content-Type': 'application/json' },
-    body: body && JSON.stringify(body),
-  })).json(), { method, apiPath, body });
-}
 
 /** A new club of the host's (a Pro player) whose first season has ended, as a "season ended" notice follows. */
 async function clubWithEndedSeason(page, seasonSettings = { seasonType: 'ROLLING' }) {

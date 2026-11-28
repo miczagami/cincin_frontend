@@ -1,19 +1,53 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Bell, ScanLine, ChevronRight } from 'lucide-react';
 import { Card, Pill } from '../../components/ui';
 import useAuthStore from '../../context/authStore';
 import Logo from '../../components/brand/Logo';
+import { commerce, games } from '../../services/api';
+
+/** How many discovery-feed items Home previews; the rest are on /discover. */
+const DISCOVER_PREVIEW = 2;
+/** How many of the player's latest finished games Home lists. */
+const RECENT_GAMES = 3;
+/** History also holds games still in the lobby or in play, so read a few more than are listed. */
+const HISTORY_PAGE = 10;
 
 export default function HomePage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuthStore();
+  const [discoverItems, setDiscoverItems] = useState(null); // null until the feed answers
 
-  const recentGames = [
-    { name: 'Penfolds Bin 389', cat: 'Red · Shiraz/Cab', score: '+8', date: 'Today' },
-    { name: 'Stone & Wood Pacific Ale', cat: 'Beer · Pale Ale', score: '+5', date: 'Yesterday' },
-  ];
+  useEffect(() => {
+    let live = true;
+    // Read a full page (the API's default): it places sponsored tastings only every 4th item,
+    // so a short page could leave them out. The preview leads with at most one sponsored
+    // tasting, then fills with organic items; the rest are on /discover.
+    commerce.getFeed()
+      .then((data) => {
+        const sponsored = data.items.filter((i) => i.isSponsored).slice(0, 1);
+        const preview = [...sponsored, ...data.items.filter((i) => !i.isSponsored)];
+        if (live) setDiscoverItems(preview.slice(0, DISCOVER_PREVIEW));
+      })
+      .catch(() => { if (live) setDiscoverItems([]); });
+    return () => { live = false; };
+  }, []);
+
+  // Game history is Pro-only: for free players (403) and players with no games, the section hides
+  const [recentGames, setRecentGames] = useState([]);
+
+  useEffect(() => {
+    let live = true;
+    games.history({ limit: HISTORY_PAGE })
+      .then((history) => {
+        const finished = history.filter((g) => g.status === 'COMPLETED');
+        if (live) setRecentGames(finished.slice(0, RECENT_GAMES));
+      })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
 
   return (
     <div className="animate-fade-in">
@@ -40,21 +74,27 @@ export default function HomePage() {
         </Card>
       </div>
 
-      <div className="px-5 mt-6">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="text-base font-display font-bold text-cin-cream">{t('home.recentGames')}</h2>
-          <button className="text-xs text-cin-gold font-body flex items-center gap-0.5">{t('home.seeAll')} <ChevronRight className="w-3 h-3" /></button>
-        </div>
-        {recentGames.map((g, i) => (
-          <Card key={i} interactive className="mb-2 flex justify-between items-center">
-            <div>
-              <div className="text-sm font-semibold text-cin-cream font-body">{g.name}</div>
-              <div className="text-xs text-cin-muted font-body mt-0.5">{g.cat} · {g.date}</div>
-            </div>
-            <div className={`text-base font-display font-extrabold ${parseInt(g.score) > 0 ? 'text-cin-green' : 'text-cin-red'}`}>{g.score}</div>
-          </Card>
-        ))}
-      </div>
+      {recentGames.length > 0 && (
+        <section aria-labelledby="home-recent-games" className="px-5 mt-6">
+          <div className="flex justify-between items-center mb-3">
+            <h2 id="home-recent-games" className="text-base font-display font-bold text-cin-cream">{t('home.recentGames')}</h2>
+            <button className="text-xs text-cin-gold font-body flex items-center gap-0.5">{t('home.seeAll')} <ChevronRight className="w-3 h-3" /></button>
+          </div>
+          <ul>
+            {recentGames.map((g) => (
+              <li key={g.gameId}>
+                <Card interactive className="mb-2 flex justify-between items-center">
+                  <div>
+                    <div className="text-sm font-semibold text-cin-cream font-body">{g.bottle?.name}</div>
+                    <div className="text-xs text-cin-muted font-body mt-0.5">{new Date(g.playedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</div>
+                  </div>
+                  <div className={`text-base font-display font-extrabold ${g.yourScore > 0 ? 'text-cin-green' : 'text-cin-red'}`}>{g.yourScore > 0 ? `+${g.yourScore}` : g.yourScore}</div>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="px-5 mt-6">
         <h2 className="text-base font-display font-bold text-cin-cream mb-3">{t('home.myCellarClub')}</h2>
@@ -66,17 +106,24 @@ export default function HomePage() {
         </Card>
       </div>
 
-      <div className="px-5 mt-6 mb-4">
+      <section aria-labelledby="home-discover" className="px-5 mt-6 mb-4">
         <div className="flex justify-between items-center mb-3">
-          <h2 className="text-base font-display font-bold text-cin-cream">{t('home.discover')}</h2>
+          <h2 id="home-discover" className="text-base font-display font-bold text-cin-cream">{t('home.discover')}</h2>
           <button className="text-xs text-cin-gold font-body flex items-center gap-0.5">{t('home.browse')} <ChevronRight className="w-3 h-3" /></button>
         </div>
-        <Card gradient="sponsor" className="border-cin-orange/20">
-          <Pill color="orange" className="mb-2">Sponsored</Pill>
-          <div className="text-sm font-bold text-cin-cream font-body">Four Pillars Rare Dry Gin</div>
-          <div className="text-xs text-cin-text font-body mt-1">Double points this weekend. Can you taste the Tasmanian pepperberry?</div>
-        </Card>
-      </div>
+        {discoverItems?.length === 0 && (
+          <p className="text-sm text-cin-muted font-body">{t('home.discoverEmpty')}</p>
+        )}
+        {/* Only the item's own title and subtitle: never the brand's badge text or a points
+            offer, which the alcohol-marketing code warns against (ABAC copy audit) */}
+        {discoverItems?.map((item) => (
+          <Card key={item.id} gradient={item.isSponsored ? 'sponsor' : undefined} className={`mb-2 ${item.isSponsored ? 'border-cin-orange/20' : ''}`}>
+            {item.isSponsored && <Pill color="orange" className="mb-2">{t('home.sponsored')}</Pill>}
+            <div className="text-sm font-bold text-cin-cream font-body">{item.title}</div>
+            {item.subtitle && <div className="text-xs text-cin-text font-body mt-1">{item.subtitle}</div>}
+          </Card>
+        ))}
+      </section>
     </div>
   );
 }

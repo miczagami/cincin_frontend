@@ -3,6 +3,17 @@ import { expect } from '@playwright/test';
 
 export const PASSWORD = 'TestPass1';
 export const BOTTLE = 'Penfolds Bin 389';
+/** The seeded Penfolds bottle's ID. */
+export const BOTTLE_ID = 'seed-penfolds-bin-389-cabernet-shiraz';
+
+/** Call the API as the signed-in player. */
+export function api(page, method, apiPath, body) {
+  return page.evaluate(async ({ method, apiPath, body }) => (await fetch(`/api${apiPath}`, {
+    method,
+    headers: { Authorization: `Bearer ${sessionStorage.getItem('cin_access_token')}`, 'Content-Type': 'application/json' },
+    body: body && JSON.stringify(body),
+  })).json(), { method, apiPath, body });
+}
 
 /** Fill in and submit the login form the page is showing. */
 export async function fillLogin(page, email) {

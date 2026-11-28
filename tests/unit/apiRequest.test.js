@@ -31,3 +31,14 @@ test("in development, the app's own pages and files are not API requests", () =>
 test('a path that only starts with the same letters as /api is not an API request', () => {
   assert.equal(isCinCinApiRequest(new URL('http://localhost:3000/apiary.png'), DEVELOPMENT_API), false);
 });
+
+// The worker caches some API calls in caches of their own, chosen by the path under /api
+const BOTTLE_CACHE = /^\/bottles\/[^/]+\/cache/i;
+
+test('a call to an API path the pattern names is a request for that path', () => {
+  assert.equal(isCinCinApiRequest(new URL('https://api.playcincin.com/api/bottles/b1/cache'), PRODUCTION_API, BOTTLE_CACHE), true);
+});
+
+test('a call to another API path is not a request for the pattern', () => {
+  assert.equal(isCinCinApiRequest(new URL('https://api.playcincin.com/api/bottles/b1'), PRODUCTION_API, BOTTLE_CACHE), false);
+});

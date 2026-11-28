@@ -25,3 +25,4 @@ playwright-report/
 test-results/
 dist-pwa-test
 dist-pwa-unconfigured
+dist-pwa-api-origin

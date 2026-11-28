@@ -35,29 +35,34 @@ registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html')));
 
 const DAY = 86400;
 
+// CinCin's API, which in production is on another origin than the app. Its routes match the path
+// under the API base (utils/apiRequest.js): a plain regular expression would only ever match a
+// cross-origin URL from its first character. No other service's API is cached on the device
+// (such as Onfido's identity checks).
+const API_BASE = new URL(API_BASE_URL, self.location.origin);
+const apiPath = (path) => ({ url }) => isCinCinApiRequest(url, API_BASE, path);
+
 // Taxonomy data changes rarely: serve from cache, revalidate in the background
-registerRoute(/\/api\/scan\/taxonomy/i, new StaleWhileRevalidate({
+registerRoute(apiPath(/^\/scan\/taxonomy/i), new StaleWhileRevalidate({
   cacheName: 'taxonomy-cache',
   plugins: [new ExpirationPlugin({ maxEntries: 10, maxAgeSeconds: 7 * DAY }), new CacheableResponsePlugin({ statuses: [0, 200] })],
 }));
 
 // Bottles fetched for offline play; their tasting notes don't change once published
-registerRoute(/\/api\/bottles\/[^/]+\/cache/i, new CacheFirst({
+registerRoute(apiPath(/^\/bottles\/[^/]+\/cache/i), new CacheFirst({
   cacheName: 'bottle-cache',
   plugins: [new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * DAY }), new CacheableResponsePlugin({ statuses: [0, 200] })],
 }));
 
 // Profile and palate: fresh when online, cached copy when offline
-registerRoute(/\/api\/(palate|users\/me)/i, new NetworkFirst({
+registerRoute(apiPath(/^\/(palate|users\/me)/i), new NetworkFirst({
   cacheName: 'profile-cache',
   networkTimeoutSeconds: 5,
   plugins: [new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: DAY }), new CacheableResponsePlugin({ statuses: [0, 200] })],
 }));
 
-// Other calls to CinCin's own API. Only CinCin's: other services' APIs (such as Onfido's
-// identity checks) are never cached on the device.
-const API_BASE = new URL(API_BASE_URL, self.location.origin);
-registerRoute(({ url }) => isCinCinApiRequest(url, API_BASE), new NetworkFirst({
+// Other API calls
+registerRoute(apiPath(), new NetworkFirst({
   cacheName: 'api-cache',
   networkTimeoutSeconds: 5,
   plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 3600 })],

@@ -97,7 +97,11 @@ test('Recent Games lists the games a Pro player has played, from their history',
   await api(page, 'POST', `/games/${game.id}/end`);
   await page.goto('/');
 
-  await expect(recentGames(page).getByText('Penfolds Bin 389').first()).toBeVisible();
+  // The player already has other Penfolds games, so check the newest row is this one: it
+  // ended with no guesses, so it scored 0 (the removed mock's Penfolds row showed +8)
+  const newest = recentGames(page).getByRole('listitem').first();
+  await expect(newest).toContainText('Penfolds Bin 389');
+  await expect(newest.getByText('0', { exact: true })).toBeVisible();
 });
 
 test('a free player, whose game history is Pro-only, sees no Recent Games section and no error', async ({ browser }) => {
@@ -193,4 +197,22 @@ test('organic discovery items show on Home without a Sponsored label', async ({ 
 
   await expect(discover(page).getByText('Trending this week')).toBeVisible();
   await expect(discover(page).getByText('Sponsored', { exact: true })).toHaveCount(0);
+});
+
+test('Recent Games lists only finished games, never one left in the lobby or abandoned', async ({ browser }) => {
+  const page = await signIn(browser, 'host@test.com');
+  const games = [
+    { ...PLAYED, gameId: 'g-lobby', status: 'LOBBY', yourScore: 0, bottle: { ...PLAYED.bottle, name: 'Still in the lobby' } },
+    { ...PLAYED, gameId: 'g-live', status: 'IN_PROGRESS', yourScore: 0, bottle: { ...PLAYED.bottle, name: 'Still being played' } },
+    ...['One', 'Two', 'Three'].map((name, i) => ({ ...PLAYED, gameId: `g-${i}`, bottle: { ...PLAYED.bottle, name } })),
+  ];
+  await page.route('**/api/games/history*', (route) => route.fulfill({ json: games }));
+  const historyRequest = page.waitForRequest('**/api/games/history*');
+  await page.goto('/');
+
+  // Asking for only 3 would leave gaps whenever unfinished games are among the latest
+  expect(Number(new URL((await historyRequest).url()).searchParams.get('limit'))).toBeGreaterThan(3);
+  await expect(recentGames(page).getByRole('listitem')).toHaveCount(3);
+  await expect(recentGames(page).getByText('Three')).toBeVisible();
+  await expect(recentGames(page).getByText(/Still in the lobby|Still being played/)).toHaveCount(0);
 });

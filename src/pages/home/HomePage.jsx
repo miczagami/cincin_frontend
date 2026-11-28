@@ -9,8 +9,10 @@ import { commerce, games } from '../../services/api';
 
 /** How many discovery-feed items Home previews; the rest are on /discover. */
 const DISCOVER_PREVIEW = 2;
-/** How many of the player's latest games Home lists. */
+/** How many of the player's latest finished games Home lists. */
 const RECENT_GAMES = 3;
+/** History also holds games still in the lobby or in play, so read a few more than are listed. */
+const HISTORY_PAGE = 10;
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -36,8 +38,11 @@ export default function HomePage() {
 
   useEffect(() => {
     let live = true;
-    games.history({ limit: RECENT_GAMES })
-      .then((history) => { if (live) setRecentGames(history.slice(0, RECENT_GAMES)); })
+    games.history({ limit: HISTORY_PAGE })
+      .then((history) => {
+        const finished = history.filter((g) => g.status === 'COMPLETED');
+        if (live) setRecentGames(finished.slice(0, RECENT_GAMES));
+      })
       .catch(() => {});
     return () => { live = false; };
   }, []);

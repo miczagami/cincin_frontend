@@ -116,12 +116,15 @@ test("a player's responses still on their way when they log out are not kept", a
   await page.goto('/settings');
   // One for each of the player's caches (profile-cache, api-cache)
   const late = ['/api/palate/progress', '/api/clubs'];
+  // and one for a cache that keeps what it gets (taxonomy-cache), answered after them: once it is
+  // cached, the worker has been through theirs
+  const control = '/api/scan/taxonomy';
   // The server answers while the player is signed in, but the answers only reach the worker after they log out
   let deliver;
   const delivered = new Promise((resolve) => { deliver = resolve; });
   const reachedServer = [];
   const answeredWorker = [];
-  for (const path of late) {
+  for (const path of [...late, control]) {
     let reached;
     reachedServer.push(new Promise((resolve) => { reached = resolve; }));
     let answered;
@@ -130,20 +133,21 @@ test("a player's responses still on their way when they log out are not kept", a
       const response = await route.fetch();
       reached(response.status());
       await delivered;
+      // The control's answer goes last
+      if (path === control) await Promise.all(answeredWorker.slice(0, late.length));
       await route.fulfill({ response });
       answered();
     });
   }
   // Not awaited: logging out reloads the page, which ends these calls on the page's side
-  for (const path of late) api(page, 'GET', path.replace(/^\/api/, '')).catch(() => {});
-  expect(await Promise.all(reachedServer)).toEqual([200, 200]);
+  for (const path of [...late, control]) api(page, 'GET', path.replace(/^\/api/, '')).catch(() => {});
+  expect(await Promise.all(reachedServer)).toEqual([200, 200, 200]);
 
   await page.getByRole('button', { name: 'Log Out' }).click();
   await expect(page.getByRole('button', { name: 'Get Started' })).toBeVisible();
   deliver();
   await Promise.all(answeredWorker);
-  // Workbox writes the cache after it answers the page
-  await page.waitForTimeout(1000);
+  await cached(page, control);
   // Their answers don't go through setOffline
   await page.context().unrouteAll();
 

@@ -20,9 +20,9 @@ test('concurrent requests after the access token expires share one refresh', asy
   page.on('request', (req) => { if (req.url().endsWith('/api/auth/refresh')) refreshes.push(req); });
 
   const results = await page.evaluate(async () => {
-    const { default: api } = await import('/src/services/api.js');
+    const { default: client } = await import('/src/services/api.js');
     sessionStorage.setItem('cin_access_token', 'expired.or.invalid');
-    const calls = await Promise.allSettled([api.get('/users/me'), api.get('/clubs'), api.get('/notifications')]);
+    const calls = await Promise.allSettled([client.get('/users/me'), client.get('/clubs'), client.get('/notifications')]);
     return calls.map((c) => c.status);
   });
 

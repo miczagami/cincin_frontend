@@ -3,19 +3,9 @@
  * src/services/shareLinks.js, overridable with VITE_SHARE_URL), never to cincin.app.
  */
 import { test, expect } from '@playwright/test';
-import { signIn } from './helpers';
+import { signIn, api, BOTTLE_ID } from './helpers';
 
 const APP_LINK = 'https://app.playcincin.com';
-const BOTTLE_ID = 'seed-penfolds-bin-389-cabernet-shiraz';
-
-/** Call the API as the signed-in player. */
-function api(page, method, apiPath, body) {
-  return page.evaluate(async ({ method, apiPath, body }) => (await fetch(`/api${apiPath}`, {
-    method,
-    headers: { Authorization: `Bearer ${sessionStorage.getItem('cin_access_token')}`, 'Content-Type': 'application/json' },
-    body: body && JSON.stringify(body),
-  })).json(), { method, apiPath, body });
-}
 
 /** Play one finished pass-the-phone game as the signed-in player; returns its ID. */
 async function playGame(page) {

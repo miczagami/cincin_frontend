@@ -2,20 +2,10 @@
  * Home shows only what the API sends: no hard-coded brands or offers (ABAC copy audit, #39).
  */
 import { test, expect } from '@playwright/test';
-import { signIn } from './helpers';
+import { signIn, api, BOTTLE, BOTTLE_ID } from './helpers';
 
 const discover = (page) => page.getByRole('region', { name: 'Discover' });
 const recentGames = (page) => page.getByRole('region', { name: 'Recent Games' });
-const BOTTLE_ID = 'seed-penfolds-bin-389-cabernet-shiraz';
-
-/** Call the API as the signed-in player. */
-function api(page, method, apiPath, body) {
-  return page.evaluate(async ({ method, apiPath, body }) => (await fetch(`/api${apiPath}`, {
-    method,
-    headers: { Authorization: `Bearer ${sessionStorage.getItem('cin_access_token')}`, 'Content-Type': 'application/json' },
-    body: body && JSON.stringify(body),
-  })).json(), { method, apiPath, body });
-}
 
 test('with nothing in the discovery feed, Discover shows a neutral empty state', async ({ browser }) => {
   const page = await signIn(browser, 'player2@test.com');
@@ -100,7 +90,7 @@ test('Recent Games lists the games a Pro player has played, from their history',
   // The player already has other Penfolds games, so check the newest row is this one: it
   // ended with no guesses, so it scored 0 (the removed mock's Penfolds row showed +8)
   const newest = recentGames(page).getByRole('listitem').first();
-  await expect(newest).toContainText('Penfolds Bin 389');
+  await expect(newest).toContainText(BOTTLE);
   await expect(newest.getByText('0', { exact: true })).toBeVisible();
 });
 

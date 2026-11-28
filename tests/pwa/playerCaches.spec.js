@@ -153,3 +153,39 @@ test("a player's responses still on their way when they log out are not kept", a
 
   expect(await servedOffline(page, late)).toEqual([]);
 });
+
+test("closing the app while the server is slow to log the player out still drops their API responses", async ({ player: page }) => {
+  const theirs = ['/api/users/me', '/api/clubs'];
+  await fetchAndCache(page, theirs);
+  await page.context().route('**/api/auth/logout', () => {}); // never answered
+
+  await page.goto('/settings');
+  const loggingOut = page.waitForRequest('**/api/auth/logout');
+  await page.getByRole('button', { name: 'Log Out' }).click();
+  await loggingOut;
+  await page.close();
+
+  const next = await page.context().newPage();
+  await next.goto('/auth');
+  await controllingWorker(next);
+  await next.context().unrouteAll({ behavior: 'ignoreErrors' });
+  expect(await servedOffline(next, theirs)).toEqual([]);
+});
+
+test("responses fetched while the server is slow to log the player out aren't kept either", async ({ player: page }) => {
+  let answerLogout;
+  const logoutAnswered = new Promise((resolve) => { answerLogout = resolve; });
+  await page.context().route('**/api/auth/logout', async (route) => { await logoutAnswered; await route.continue(); });
+
+  await page.goto('/settings');
+  const loggingOut = page.waitForRequest('**/api/auth/logout');
+  await page.getByRole('button', { name: 'Log Out' }).click();
+  await loggingOut;
+  // The player is still signed in until the server answers, and the app keeps calling the API
+  await fetchAndCache(page, ['/api/clubs']);
+  answerLogout();
+  await expect(page.getByRole('button', { name: 'Get Started' })).toBeVisible();
+
+  await page.context().unrouteAll({ behavior: 'ignoreErrors' });
+  expect(await servedOffline(page, ['/api/clubs'])).toEqual([]);
+});

@@ -4,23 +4,31 @@
  *
  * Runs against the pwa project's production build, which calls the app's own /api.
  */
-import { test, expect } from '@playwright/test';
-import { signIn, BOTTLE_ID } from '../e2e/helpers';
+import { test as base, expect } from '@playwright/test';
+import { signIn, api, BOTTLE_ID } from '../e2e/helpers';
 import { controllingWorker } from './helpers';
 
-/** Fetch `paths` as the signed-in player, and wait until the worker has cached each one. */
+// player: the seeded host, signed in, in a page the worker controls
+const test = base.extend({
+  player: async ({ browser }, use) => {
+    const page = await signIn(browser, 'host@test.com');
+    await controllingWorker(page);
+    await use(page);
+    await page.context().close();
+  },
+});
+
+/** Wait until the worker has cached `path` (Workbox writes the cache after it answers the page). */
+async function cached(page, path) {
+  await expect.poll(() => page.evaluate(async (path) => Boolean(await caches.match(path)), path)).toBe(true);
+}
+
+/** Fetch `paths` (under /api) as the signed-in player, and wait until the worker has cached each one. */
 async function fetchAndCache(page, paths) {
-  await page.evaluate(async (paths) => {
-    const headers = { Authorization: `Bearer ${sessionStorage.getItem('cin_access_token')}` };
-    for (const path of paths) {
-      if (!(await fetch(path, { headers })).ok) throw new Error(`${path} failed`);
-      // Workbox writes the cache after it answers the page
-      for (let tries = 0; !(await caches.match(path)); tries += 1) {
-        if (tries === 50) throw new Error(`${path} was never cached`);
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
-    }
-  }, paths);
+  for (const path of paths) {
+    await api(page, 'GET', path.replace(/^\/api/, ''));
+    await cached(page, path);
+  }
 }
 
 /**
@@ -49,35 +57,27 @@ async function servedOffline(page, paths) {
   return served;
 }
 
-test("after a player logs out, the worker serves none of their API responses offline", async ({ browser }) => {
-  const page = await signIn(browser, 'host@test.com');
-  await controllingWorker(page);
+test("after a player logs out, the worker serves none of their API responses offline", async ({ player: page }) => {
   const theirs = ['/api/users/me', '/api/clubs'];
   await fetchAndCache(page, theirs);
 
   await logOut(page);
 
   await expect.poll(() => servedOffline(page, theirs)).toEqual([]);
-  await page.context().close();
 });
 
 // Published bottles and the taxonomy belong to no player
 const SHARED = [`/api/bottles/${BOTTLE_ID}/cache`, '/api/scan/taxonomy'];
 
-test('logging out keeps the bottles and taxonomy fetched for offline play', async ({ browser }) => {
-  const page = await signIn(browser, 'host@test.com');
-  await controllingWorker(page);
+test('logging out keeps the bottles and taxonomy fetched for offline play', async ({ player: page }) => {
   await fetchAndCache(page, SHARED);
 
   await logOut(page);
 
   expect(await servedOffline(page, SHARED)).toEqual(SHARED);
-  await page.context().close();
 });
 
-test("Settings' Clear cache empties every API cache the worker keeps", async ({ browser }) => {
-  const page = await signIn(browser, 'host@test.com');
-  await controllingWorker(page);
+test("Settings' Clear cache empties every API cache the worker keeps", async ({ player: page }) => {
   const everything = ['/api/users/me', '/api/clubs', ...SHARED];
   await fetchAndCache(page, everything);
 
@@ -85,11 +85,9 @@ test("Settings' Clear cache empties every API cache the worker keeps", async ({ 
   await page.getByText('Clear cache', { exact: true }).click();
 
   await expect.poll(() => servedOffline(page, everything)).toEqual([]);
-  await page.context().close();
 });
 
-test('Clear cache also empties the bottles saved on the device for offline play', async ({ browser }) => {
-  const page = await signIn(browser, 'host@test.com');
+test('Clear cache also empties the bottles saved on the device for offline play', async ({ player: page }) => {
   await page.goto('/settings');
   // The Settings row: its label, then the count
   const cachedBottles = page.getByText('Cached bottles', { exact: true }).locator('xpath=../..');
@@ -112,12 +110,9 @@ test('Clear cache also empties the bottles saved on the device for offline play'
   await expect(cachedBottles).toHaveText(/^Cached bottles\s*0$/);
   await page.reload();
   await expect(cachedBottles).toHaveText(/^Cached bottles\s*0$/);
-  await page.context().close();
 });
 
-test("a player's responses still on their way when they log out are not kept", async ({ browser }) => {
-  const page = await signIn(browser, 'host@test.com');
-  await controllingWorker(page);
+test("a player's responses still on their way when they log out are not kept", async ({ player: page }) => {
   await page.goto('/settings');
   // One for each of the player's caches (profile-cache, api-cache)
   const late = ['/api/palate/progress', '/api/clubs'];
@@ -139,10 +134,8 @@ test("a player's responses still on their way when they log out are not kept", a
       answered();
     });
   }
-  await page.evaluate((late) => {
-    const headers = { Authorization: `Bearer ${sessionStorage.getItem('cin_access_token')}` };
-    for (const path of late) fetch(path, { headers });
-  }, late);
+  // Not awaited: logging out reloads the page, which ends these calls on the page's side
+  for (const path of late) api(page, 'GET', path.replace(/^\/api/, '')).catch(() => {});
   expect(await Promise.all(reachedServer)).toEqual([200, 200]);
 
   await page.getByRole('button', { name: 'Log Out' }).click();
@@ -155,5 +148,4 @@ test("a player's responses still on their way when they log out are not kept", a
   await page.context().unrouteAll();
 
   expect(await servedOffline(page, late)).toEqual([]);
-  await page.context().close();
 });

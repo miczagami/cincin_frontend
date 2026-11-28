@@ -87,12 +87,21 @@ test('Recent Games lists the games a Pro player has played, from their history',
   const game = await api(page, 'POST', '/games', { bottleId: BOTTLE_ID, multiplayerType: 'PASS_THE_PHONE', guestPlayerNames: ['Guesty'] });
   await api(page, 'POST', `/games/${game.id}/start`);
   await api(page, 'POST', `/games/${game.id}/end`);
+  // The player has many earlier Penfolds games, so pass the real history through but rename
+  // this run's game: only that row can then show the name
+  await page.route('**/api/games/history*', async (route) => {
+    const response = await route.fetch();
+    const history = await response.json();
+    await route.fulfill({
+      response,
+      json: history.map((g) => (g.gameId === game.id ? { ...g, bottle: { ...g.bottle, name: `This run's ${BOTTLE}` } } : g)),
+    });
+  });
   await page.goto('/');
 
-  // The player already has other Penfolds games, so check the newest row is this one: it
-  // ended with no guesses, so it scored 0 (the removed mock's Penfolds row showed +8)
   const newest = recentGames(page).getByRole('listitem').first();
-  await expect(newest).toContainText(BOTTLE);
+  await expect(newest).toContainText(`This run's ${BOTTLE}`);
+  // It ended with no guesses
   await expect(newest.getByText('0', { exact: true })).toBeVisible();
 });
 
@@ -196,6 +205,8 @@ test('Recent Games lists only finished games, never one left in the lobby or aba
   const games = [
     { ...PLAYED, gameId: 'g-lobby', status: 'LOBBY', yourScore: 0, bottle: { ...PLAYED.bottle, name: 'Still in the lobby' } },
     { ...PLAYED, gameId: 'g-live', status: 'IN_PROGRESS', yourScore: 0, bottle: { ...PLAYED.bottle, name: 'Still being played' } },
+    { ...PLAYED, gameId: 'g-expired', status: 'EXPIRED', yourScore: 0, bottle: { ...PLAYED.bottle, name: 'Lobby expired' } },
+    { ...PLAYED, gameId: 'g-cancelled', status: 'CANCELLED', yourScore: 0, bottle: { ...PLAYED.bottle, name: 'Called off' } },
     ...['One', 'Two', 'Three'].map((name, i) => ({ ...PLAYED, gameId: `g-${i}`, bottle: { ...PLAYED.bottle, name } })),
   ];
   await page.route('**/api/games/history*', (route) => route.fulfill({ json: games }));
@@ -206,7 +217,7 @@ test('Recent Games lists only finished games, never one left in the lobby or aba
   expect(Number(new URL((await historyRequest).url()).searchParams.get('limit'))).toBeGreaterThan(3);
   await expect(recentGames(page).getByRole('listitem')).toHaveCount(3);
   await expect(recentGames(page).getByText('Three')).toBeVisible();
-  await expect(recentGames(page).getByText(/Still in the lobby|Still being played/)).toHaveCount(0);
+  await expect(recentGames(page).getByText(/Still in the lobby|Still being played|Lobby expired|Called off/)).toHaveCount(0);
 });
 
 test('Discover previews at most one sponsored tasting, then organic items', async ({ browser }) => {
@@ -220,6 +231,8 @@ test('Discover previews at most one sponsored tasting, then organic items', asyn
 
   await expect(discover(page).getByText('Ad A', { exact: true })).toBeVisible();
   await expect(discover(page).getByText('Trending One', { exact: true })).toBeVisible();
+  // The sponsored tasting leads the preview, though the feed lists an organic item first
+  await expect(discover(page).getByText(/^(Ad A|Trending One)$/).first()).toHaveText('Ad A');
   await expect(discover(page).getByText('Ad B', { exact: true })).toHaveCount(0);
   await expect(discover(page).getByText('Sponsored', { exact: true })).toHaveCount(1);
 });

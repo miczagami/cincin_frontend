@@ -18,3 +18,29 @@ test('the built app names no cincin.app link', () => {
   expect(files.length).toBeGreaterThan(0);
   expect(files.filter((file) => fs.readFileSync(file, 'utf8').includes('cincin.app'))).toEqual([]);
 });
+
+/** The built _headers file as rules: each path with its header lines (Sevalla's syntax). */
+function headerRules(dir = PWA_OUT_DIR) {
+  const rules = [];
+  for (const line of fs.readFileSync(path.join(dir, '_headers'), 'utf8').split('\n')) {
+    if (line.startsWith('/')) rules.push({ path: line.trim(), headers: [] });
+    else if (line.includes(':') && !line.trim().startsWith('#')) {
+      const [name, ...value] = line.split(':');
+      rules.at(-1).headers.push({ name: name.trim(), value: value.join(':').trim() });
+    }
+  }
+  return rules;
+}
+
+test('every page the site serves, deep links included, carries the report-only CSP', () => {
+  const policies = headerRules().flatMap((rule) => rule.headers
+    .filter((header) => header.name === 'Content-Security-Policy-Report-Only')
+    .map((header) => ({ path: rule.path, value: header.value })));
+  // One rule only: Sevalla joins the values of every matching rule into one header
+  expect(policies.map((policy) => policy.path)).toEqual(['/*']);
+  expect(policies[0].value).toContain("default-src 'self'");
+});
+
+test("the built headers file keeps the cache rules", () => {
+  expect(headerRules().find((rule) => rule.path === '/assets/*')?.headers).toContainEqual({ name: 'Cache-Control', value: 'public, max-age=31536000, immutable' });
+});
